@@ -5,6 +5,10 @@ use auth::SimpleAuthority;
 use writium_framework::prelude::*;
 use writium_framework::hyper::mime::Mime;
 
+pub mod index;
+
+pub use self::index::Index;
+
 pub mod comment;
 pub mod metadata;
 pub mod post;
@@ -57,9 +61,18 @@ fn convert_v1_extra(extra: V1RawExtra) -> V1Extra {
 pub fn api_v1(extra: TomlValue) -> Namespace {
     let extra: V1RawExtra = extra.try_into().expect("Unable to parse fields neccessary to Writium Blog API v1");
     let extra = convert_v1_extra(extra);
+    
+    let index = Index::create(&extra.published_dir,
+        &extra.index_key, &extra.index_key_type);
+
+    let mut post = PostApi::new();
+    post.set_auth(extra.auth.clone());
+    post.set_cache_default(&extra.published_dir);
+    post.set_index(index.clone());
+
     Namespace::new(&[])
+        .with_api(post)
         .with_api(CommentApi ::new(&extra))
         .with_api(MetadataApi::new(&extra))
-        .with_api(PostApi    ::new(&extra))
         .with_api(ResourceApi::new(&extra))
 }
