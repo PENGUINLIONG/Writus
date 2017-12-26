@@ -1,0 +1,38 @@
+[package]
+name = "writus"
+version = "0.1.0"
+authors = ["PENGUINLIONG <admin@penguinliong.moe>"]
+
+[dependencies]
+
+# Web services.
+futures = "0.1"
+hyper = "0.11"
+hyper-rustls = "0.11"
+rustls = "0.11"
+tokio-proto = "0.1"
+tokio-rustls = "0.4"
+tokio-service = "0.1"
+
+# Writium.
+writium-auth = { version="0.1", path="/writium-auth" }
+writium-cache = { version="0.1", path="/writium-cache" }
+writium-framework = { version="0.1", path="/writium-framework" }
+
+# Content generation.
+path_buf = "0.1"
+chrono = "0.4"
+pulldown-cmark = "0.1"
+walkdir = "2.0"
+toml = "0.4"
+serde_derive = "1.0"
+serde = "1.0"
+serde_json = "1.0"
+
+# Logging.
+log = "0.3"
+env_logger = "0.4"
+
+# Bin utils.
+getopts = "0.2"
+ctrlc = "3.0"
