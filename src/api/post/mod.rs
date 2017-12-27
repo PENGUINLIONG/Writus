@@ -28,7 +28,7 @@ impl PostApi {
     pub fn new() -> PostApi {
         PostApi {
             auth: Arc::new(::writium_auth::DumbAuthority::new()),
-            cache: Cache::new(10, ::writium_cache::DumbCacheSource::new()),
+            cache: Cache::new(0, ::writium_cache::DumbCacheSource::new()),
             index: Index::default(),
             entries_per_request: DEFAULT_ENTRIES_PER_REQUEST,
         }

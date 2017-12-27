@@ -9,6 +9,9 @@ pub mod index;
 
 pub use self::index::Index;
 
+#[cfg(test)]
+mod test_common;
+
 pub mod comment;
 pub mod metadata;
 pub mod post;
@@ -70,9 +73,13 @@ pub fn api_v1(extra: TomlValue) -> Namespace {
     post.set_cache_default(&extra.published_dir);
     post.set_index(index.clone());
 
+    let mut comment = CommentApi::new();
+    comment.set_auth(extra.auth.clone());
+    post.set_cache_default(&extra.published_dir);
+
     Namespace::new(&[])
         .with_api(post)
-        .with_api(CommentApi ::new(&extra))
+        .with_api(comment)
         .with_api(MetadataApi::new(&extra))
         .with_api(ResourceApi::new(&extra))
 }

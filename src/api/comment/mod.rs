@@ -1,38 +1,54 @@
 ///! Comments API.
 ///! All comments of an article are stored in `comments.json`.
-use std::io::{BufReader, BufWriter};
-use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
-use serde_json as json;
 use writium_framework::prelude::*;
-use writium_cache::{Cache, CacheSource};
 use writium_auth::Authority;
-use auth::SimpleAuthority;
-use super::V1Extra;
+use writium_cache::Cache;
 
-const COMMENTS_PER_QUERY: usize = 5;
+mod source;
+#[cfg(test)]
+mod tests;
 
-const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
+use self::source::DefaultSource;
+
+const DEFAULT_ENTRIES_PER_REQUEST: usize = 5;
+
 const ERR_PRIVILEGE: &'static str = "Requested operation need a matching privilege token to execute.";
 const ERR_NOT_FOUND: &'static str = "Cannot find a comment matching the requested index. Maybe it's been deleted already.";
+const ERR_RANGE: &'static str = "The requested range is not valid. A valid range should be one of `from={from}`, `to={to}`, or `from={from}&to={to}` where `{from}` < `{to}`.";
 
 #[derive(Clone, Deserialize, Serialize)]
-struct CommentJson {
+pub struct Comment {
     pub metadata: HashMap<String, String>,
     pub content: String,
 }
 
 pub struct CommentApi {
-    cache: Cache<HashMap<usize, CommentJson>>,
-    auth: Arc<SimpleAuthority>,
+    cache: Cache<BTreeMap<usize, Comment>>,
+    auth: Arc<Authority<Privilege=()>>,
+    entries_per_request: usize,
 }
 impl CommentApi {
-    pub fn new(extra: &V1Extra) -> CommentApi {
+    pub fn new() -> CommentApi {
         CommentApi {
-            cache: Cache::new(10, CommentSource::new(&extra.published_dir)),
-            auth: extra.auth.clone(),
+            cache: Cache::new(0, ::writium_cache::DumbCacheSource::new()),
+            auth: Arc::new(::writium_auth::DumbAuthority::new()),
+            entries_per_request: DEFAULT_ENTRIES_PER_REQUEST,
         }
+    }
+
+    pub fn set_cache_default(&mut self, published_dir: &str) {
+        self.cache = Cache::new(10, DefaultSource::new(published_dir));
+    }
+    pub fn set_cache(&mut self, cache: Cache<BTreeMap<usize, Comment>>) {
+        self.cache = cache;
+    }
+    pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {
+        self.auth = auth;
+    }
+    pub fn set_entries_per_request(&mut self, entries_per_request: usize) {
+        self.entries_per_request = entries_per_request;
     }
 
     /// DELETE `/comments/<path..>?{index}`  
@@ -51,7 +67,7 @@ impl CommentApi {
         if let Some(index) = param.index {
             self.delete_one(req, index)
         // If any range specifier present, remove the range.
-        } else if param.from.is_some() && param.to.is_some() {
+        } else if param.from.is_some() || param.to.is_some() {
             self.delete_range(req, param.from.clone(), param.to.clone())
         // Finally, if no delimiter was set, remove the entire `comments.json`
         // file. The indexing will start from 0 again next time it's generated.
@@ -63,9 +79,8 @@ impl CommentApi {
         fn auth(priv_token: &str, req: &Request) -> Result<()> {
             req.header::<Authorization<Bearer>>()
                 .ok_or(Error::bad_request(ERR_PRIVILEGE))
-                .map(|auth| &auth.token)
-                .and_then(|auth_token| {
-                    if priv_token == auth_token {
+                .and_then(|auth| {
+                    if priv_token == &auth.token {
                         Ok(())
                     } else {
                         Err(Error::bad_request(ERR_PRIVILEGE))
@@ -93,7 +108,18 @@ impl CommentApi {
         let id = req.path_segs().join("/");
         let lock = self.cache.get(&id)?;
         let mut cache = lock.write().unwrap();
-        for index in from.unwrap_or(0)..to.unwrap_or(cache.len()) {
+        let from = from.unwrap_or(0);
+        let to = if let Some(to) = to {
+            to
+        } else if let Some(ref last) = cache.iter().last() {
+            last.0.to_owned() + 1
+        } else {
+            return Ok(Response::new())
+        };
+        if from >= to {
+            return Err(Error::bad_request(ERR_RANGE));
+        }
+        for index in from..to {
             cache.remove(&index);
         }
         Ok(Response::new())
@@ -101,8 +127,10 @@ impl CommentApi {
     fn delete_all(&self, req: &mut Request) -> ApiResult {
         self.auth.authorize((), req)?;
         let id = req.path_segs().join("/");
-        self.cache.remove(&id)
-            .map(|_| Response::new())
+        let lock = self.cache.get(&id)?;
+        let mut cache = lock.write().unwrap();
+        cache.clear();
+        Ok(Response::new())
     }
 
     /// GET `/comments/<path..>?{index}`  
@@ -127,7 +155,7 @@ impl CommentApi {
         let lock = self.cache.get(&id)?;
         let cache = lock.read().unwrap();
         cache.get(&index)
-            .ok_or(Error::bad_request(ERR_NOT_FOUND))
+            .ok_or(Error::not_found(ERR_NOT_FOUND))
             .and_then(|comment| Response::new().with_json(comment))
     }
     /// If from specifier present, get the item indexed form and several
@@ -137,19 +165,18 @@ impl CommentApi {
         let id = req.path_segs().join("/");
         let lock = self.cache.get(&id)?;
         let cache = lock.read().unwrap();
-        let mut res_content = HashMap::new();
-        for i in from..(from + COMMENTS_PER_QUERY) {
-            if let Some(comment) = cache.get(&i) {
-                res_content.insert(i, comment);
-            }
-        }
+
+        let res_content: BTreeMap<&usize, &Comment> = cache.iter()
+            .skip(from)
+            .take(self.entries_per_request)
+            .collect();
         Response::new().with_json(&res_content)
     }
 
     /// POST `/comments/<path..>`
     fn post(&self, req: &mut Request) -> ApiResult {
         let id = req.path_segs().join("/");
-        let comment = req.to_json::<CommentJson>()?;
+        let comment = req.to_json::<Comment>()?;
         let cache = self.cache.get(&id)?;
         // There are comments already loaded, start indexing from the last one.
         if let Some((id, _)) = cache.read().unwrap().iter().last() {
@@ -176,54 +203,5 @@ impl Api for CommentApi {
             Delete => self.delete(req),
             _ => Err(Error::method_not_allowed()),
         }
-    }
-}
-
-struct CommentSource {
-    dir: String,
-}
-impl CommentSource {
-    fn new(dir: &str) -> CommentSource {
-        CommentSource {
-            dir: dir.to_string(),
-        }
-    }
-    fn open_comment(&self, id: &str, read: bool) -> ::std::io::Result<File> {
-        info!("Try openning file of ID: {}", id);
-        OpenOptions::new()
-            .create(true)
-            .read(read)
-            .write(!read)
-            .open(path_buf![&self.dir, id, "comments.json"])
-    }
-}
-impl CacheSource for CommentSource {
-    type Value = HashMap<usize, CommentJson>;
-    fn load(&self, id: &str, create: bool) -> Result<Self::Value> {
-        self.open_comment(id, true)
-            .and_then(|file| {
-                let reader = BufReader::new(file);
-                let json: Self::Value = json::from_reader(reader)?;
-                Ok(json)
-            })
-            .or_else(|_err| {
-                if create {
-                    Ok(HashMap::new())
-                } else {
-                    Err(Error::internal(ERR_ACCESS))
-                }
-            })
-    }
-    fn unload(&self, id: &str, obj: &Self::Value) -> Result<()> {
-        let file = self.open_comment(id, false)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
-        let writer = BufWriter::new(file);
-        json::to_writer_pretty(writer, obj)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))
-    }
-    fn remove(&self, id: &str) -> Result<()> {
-        use std::fs::remove_file;
-        remove_file(path_buf![&self.dir, id, "comments.json"])
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))
     }
 }

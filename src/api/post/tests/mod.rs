@@ -4,6 +4,7 @@ use toml::Value as TomlValue;
 use api::PostApi;
 use self::header::{Authorization, Bearer, ContentType};
 use auth::SimpleAuthority;
+use api::test_common::*;
 
 static CONTENT_MARKDOWN: &'static str = "# Title\n\nHello, Writus!\n\nBeep!";
 static CONTENT_HTML: &'static str = "<h1>Title</h1>\n<p>Hello, Writus!</p>\n<p>Beep!</p>\n";
@@ -31,29 +32,6 @@ fn indexed_api() -> PostApi {
     index.write().unwrap().push((TomlValue::Integer(2), "/baz".into()));
     api.set_index(index);
     api
-}
-
-fn test_ok(api: &PostApi, mut req: Request) -> Response {
-    let result = api.route(&mut req);
-    assert!(result.is_ok());
-    result.unwrap()
-}
-fn test_err(api: &PostApi, mut req: Request) -> Error {
-    let result = api.route(&mut req);
-    assert!(result.is_err());
-    result.unwrap_err()
-}
-fn check_type(res: &Response, ty: &str, sub: &str) {
-    let ctype = res.header::<ContentType>();
-    assert!(ctype.is_some());
-    let ctype = ctype.unwrap();
-    assert_eq!(ctype.0.type_(), ty);
-    assert_eq!(ctype.0.subtype(), sub);
-}
-fn check_content(res: &Response, content: &str) {
-    let res_content = res.to_str();
-    assert!(res_content.is_ok());
-    assert_eq!(res_content.unwrap(), content);
 }
 
 #[test]
