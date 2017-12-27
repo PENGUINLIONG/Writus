@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use auth::SimpleAuthority;
-use super::CommentApi;
+use super::{Comment, CommentApi};
 use writium_cache::Cache;
 use writium_framework::prelude::*;
 use api::test_common::*;
@@ -14,6 +15,7 @@ const DEFAULT_JSON: &'static str = r#"{"0":{"metadata":{"author":"PENGUINLIONG"}
 const MANY_JSON: &'static str = r#"{"0":{"metadata":{"author":"PENGUINLIONG"},"content":"Wow!"},"2":{"metadata":{"author":"NOTLIONG"},"content":"Well."}}"#;
 const MANY_FROM_JSON: &'static str = r#"{"2":{"metadata":{"author":"NOTLIONG"},"content":"Well."},"4":{"metadata":{"author":"LIONG"},"content":":/"}}"#;
 const CENTER_CUT_JSON: &'static str = r#"{"0":{"metadata":{"author":"PENGUINLIONG"},"content":"Wow!"},"4":{"metadata":{"author":"LIONG"},"content":":/"}}"#;
+const POST_JSON: &'static str = r#"{"0":{"metadata":{"author":"PENGUINLIONG"},"content":"Wow!"},"1":{"metadata":{},"content":"Panda!"}}"#;
 
 fn api() -> CommentApi {
     let mut api = CommentApi::new();
@@ -171,4 +173,32 @@ fn fail_delete_range_from_to() {
     let err = test_err(&api, req);
     assert_eq!(err.status(), StatusCode::BadRequest);
 }
+#[test]
+fn test_delete_all() {
+    let api = api_with_many_comments();
+    let req = Request::new(Method::Delete)
+        .with_path_segs(&["foo"])
+        .with_header(Authorization(Bearer { token: "PASSWORD".to_owned() }));
+    let _ = test_ok(&api, req);
+    // The comment should be removed.
+    let req = Request::new(Method::Get)
+        .with_path_segs(&["foo"]);
+    let res = test_ok(&api, req);
+    check_type(&res, "application", "json");
+    check_content(&res, "{}");
+}
 
+#[test]
+fn test_post() {
+    let api = api();
+    let req = Request::new(Method::Post)
+        .with_path_segs(&["foo"])
+        .with_json(&Comment { metadata: HashMap::new(), content: "Panda!".to_owned() })
+        .unwrap();
+    let _ = test_ok(&api, req);
+    let req = Request::new(Method::Get)
+        .with_path_segs(&["foo"]);
+    let res = test_ok(&api, req);
+    check_type(&res, "application", "json");
+    check_content(&res, POST_JSON);
+}

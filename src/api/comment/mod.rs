@@ -179,11 +179,12 @@ impl CommentApi {
         let comment = req.to_json::<Comment>()?;
         let cache = self.cache.get(&id)?;
         // There are comments already loaded, start indexing from the last one.
-        if let Some((id, _)) = cache.read().unwrap().iter().last() {
-            cache.write().unwrap().insert(id + 1, comment);
+        let index = if let Some((index, _)) = cache.read().unwrap().iter().last() {
+            Some(index.to_owned())
         } else {
-            cache.write().unwrap().insert(0, comment);
-        }
+            None
+        };
+        cache.write().unwrap().insert(index.unwrap_or(0) + 1, comment);
         Ok(Response::new().with_status(StatusCode::Created))
     }
 }
