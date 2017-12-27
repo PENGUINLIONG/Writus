@@ -75,11 +75,15 @@ pub fn api_v1(extra: TomlValue) -> Namespace {
 
     let mut comment = CommentApi::new();
     comment.set_auth(extra.auth.clone());
-    post.set_cache_default(&extra.published_dir);
+    comment.set_cache_default(&extra.published_dir);
+
+    let mut metadata = MetadataApi::new();
+    metadata.set_auth(extra.auth.clone());
+    metadata.set_cache_default(&extra.published_dir);
 
     Namespace::new(&[])
         .with_api(post)
         .with_api(comment)
-        .with_api(MetadataApi::new(&extra))
+        .with_api(metadata)
         .with_api(ResourceApi::new(&extra))
 }
