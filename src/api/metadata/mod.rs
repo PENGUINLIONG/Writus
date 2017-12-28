@@ -4,6 +4,7 @@ use writium_framework::prelude::*;
 use self::header::ContentType;
 use writium_auth::{Authority, DumbAuthority};
 use writium_cache::{Cache, DumbCacheSource};
+use super::Index;
 
 mod source;
 
@@ -15,12 +16,14 @@ const ERR_JSON: &'static str = "Invalid JSON.";
 pub struct MetadataApi {
     cache: Cache<JsonValue>,
     auth: Arc<Authority<Privilege=()>>,
+    index: Index,
 }
 impl MetadataApi {
     pub fn new() -> MetadataApi {
         MetadataApi {
             cache: Cache::new(0, DumbCacheSource::new()),
             auth: Arc::new(DumbAuthority::new()),
+            index: Index::default(),
         }
     }
     pub fn set_cache_default(&mut self, published_dir: &str) {
@@ -31,6 +34,9 @@ impl MetadataApi {
     }
     pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {
         self.auth = auth;
+    }
+    pub fn set_index(&mut self, index: Index) {
+        self.index = index;
     }
 
     fn patch_cache<F>(&self, req: &mut Request, f: F) -> ApiResult
