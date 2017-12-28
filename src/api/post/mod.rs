@@ -104,16 +104,7 @@ impl PostApi {
         let param = req.to_param::<Param>()?;
         let from = param.from.unwrap_or(0);
         let guard = self.index.read().unwrap();
-        let entries = guard.iter()
-            .skip(from)
-            .take(self.entries_per_request as usize)
-            .map(|&(_, ref path)| if cfg!(windows) {
-                    path.to_string_lossy().replace('\\', "/")
-                } else {
-                    path.to_string_lossy().to_string()
-                }
-            )
-            .collect::<Vec<_>>();
+        let entries = guard.get_range(from, self.entries_per_request as usize);
         Response::new()
             .with_header(ContentType(
                 "application/json; charset=UTF-8".parse().unwrap()))
