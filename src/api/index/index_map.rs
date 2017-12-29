@@ -38,41 +38,49 @@ struct IndexItem<T: IndexKeyType> {
 }
 
 pub trait IndexCollection: Send + Sync {
-    fn insert(&mut self, path: String, key: &JsonValue);
+    fn insert(&mut self, path: &str, key: &JsonValue);
     fn get_range(&self, skip: usize, take: usize) -> Vec<String>;
     fn remove(&mut self, path: &str);
 }
 
 pub struct DefaultIndexCollection<T: IndexKeyType> {
     index: Vec<IndexItem<T>>,
-    reverse: bool,
+    asc: bool,
 }
 impl<T: IndexKeyType> DefaultIndexCollection<T> {
-    pub fn new() -> DefaultIndexCollection<T> {
+    pub fn new(asc: bool) -> DefaultIndexCollection<T> {
         DefaultIndexCollection {
             index: Vec::new(),
-            reverse: true,
+            asc: asc,
         }
     }
 }
 impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
-    fn insert(&mut self, path: String, key: &JsonValue) {
-        match if self.reverse {
-            self.index.binary_search_by(|item| item.path.cmp(&path).reverse())
+    fn insert(&mut self, path: &str, key: &JsonValue) {
+        let key = if let Some(key) = T::try_from_json(key) {
+            key
         } else {
-            self.index.binary_search_by(|item| item.path.cmp(&path))
-        } {
-            Ok(pos) => if let Some(key) = T::try_from_json(key) {
-                self.index[pos] = IndexItem { key: key, path: path.to_owned() };
-            } else {
+            if let Ok(pos) = self.index.binary_search_by(|item| {
+                let str_ref: &str = item.path.as_ref();
+                str_ref.cmp(path)
+            }) {
                 self.index.remove(pos);
                 warn!("`{}` is updated with a new key which cannot be parsed into `DateTime`. So it's removed from the index.", path)
-            },
-            Err(pos) => if let Some(key) = T::try_from_json(key) {
-                self.index.insert(pos, IndexItem { key: key, path: path.to_owned() })
             } else {
                 warn!("`{}` has a key which cannot be parsed into `DateTime`. So it's not indexed.", path);
-            },
+            }
+            return
+        };
+        match if self.asc {
+            self.index.binary_search_by(|item| item.key.cmp(&key))
+        } else {
+            self.index.binary_search_by(|item| item.key.cmp(&key).reverse())
+        } {
+            Ok(pos) => self.index[pos].key = key,
+            Err(pos) => self.index.insert(pos, IndexItem {
+                key: key,
+                path: path.to_owned(),
+            }),
         }
     }
     fn get_range(&self, skip: usize, take: usize) -> Vec<String> {
@@ -88,11 +96,7 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
             .collect::<Vec<_>>()
     }
     fn remove(&mut self, path: &str) {
-        if let Ok(pos) = if self.reverse {
-            self.index.binary_search_by(|item| (&*item.path).cmp(path).reverse())
-        } else {
-            self.index.binary_search_by(|item| (&*item.path).cmp(path))
-        } {
+        if let Ok(pos) = self.index.binary_search_by(|item| (&*item.path).cmp(path)) {
             self.index.remove(pos);
         }
     }
@@ -105,7 +109,7 @@ impl DumbIndexCollection {
     }
 }
 impl IndexCollection for DumbIndexCollection {
-    fn insert(&mut self, _path: String, _key: &JsonValue) {}
+    fn insert(&mut self, _path: &str, _key: &JsonValue) {}
     fn get_range(&self, _skip: usize, _take: usize) -> Vec<String> { Vec::new() }
     fn remove(&mut self, _path: &str) {}
 }

@@ -36,9 +36,9 @@ impl Index {
     /// storage, searching for articles in that directory and its subdirectory.
     pub fn new(key: &str, ty: &str, dir: Option<&str>) -> Index {
         let col: Box<IndexCollection> = match ty {
-            "string" => Box::new(DefaultIndexCollection::<String>::new()),
-            "integer" => Box::new(DefaultIndexCollection::<i64>::new()),
-            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new()),
+            "string" => Box::new(DefaultIndexCollection::<String>::new(true)),
+            "integer" => Box::new(DefaultIndexCollection::<i64>::new(true)),
+            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new(true)),
             _ => panic!("Index key type should be one of `datetime`, `string`, or `integer`."),
         };
         mk_idx(key, col, dir)
@@ -79,7 +79,7 @@ fn make_index(dir: &str, key: &str, index: &mut IndexCollection) {
                 let path = parent.strip_prefix(&dir).unwrap()
                     .to_string_lossy()
                     .to_string();
-                index.insert(path, &val);
+                index.insert(&path, &val);
             } else {
                 warn!("Article is not indexed: index key is absent.");
             }
