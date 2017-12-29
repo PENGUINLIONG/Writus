@@ -9,6 +9,17 @@ use self::index_map::{DateTime, DumbIndexCollection,
     DefaultIndexCollection};
 pub use self::index_map::IndexCollection;
 
+fn mk_idx(key: &str, mut col: Box<IndexCollection>, dir: Option<&str>) -> Index {
+    Index {
+        index: {
+            if let Some(dir) = dir {
+                make_index(dir, key, &mut *col);
+            }
+            Arc::new(RwLock::new(col))
+        },
+        key: key.to_owned(),
+    }
+}
 #[derive(Clone)]
 pub struct Index {
     index: Arc<RwLock<Box<IndexCollection>>>,
@@ -16,39 +27,21 @@ pub struct Index {
 }
 impl Index {
     /// Make a new `Index` with given index collection and index key.
-    pub fn new<T>(col: T, key: &str) -> Index
+    pub fn with_index_collection<T>(key: &str, col: T, dir: Option<&str>) -> Index
         where T: 'static + IndexCollection {
-        Index {
-            index: Arc::new(RwLock::new(Box::new(col))),
-            key: key.to_owned(),
-        }
+        mk_idx(key, Box::new(col), dir)
     }
-    /// Generate index from local storage.
-    pub fn gen(dir: &str, key: &str, ty: &str) -> Index {
-        fn create_str(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollection>>> {
-            let mut col = DefaultIndexCollection::<String>::new();
-            make_index(dir, key, &mut col);
-            Arc::new(RwLock::new(Box::new(col)))
-        }
-        fn create_i(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollection>>> {
-            let mut col = DefaultIndexCollection::<i64>::new();
-            make_index(dir, key, &mut col);
-            Arc::new(RwLock::new(Box::new(col)))
-        }
-        fn create_dt(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollection>>> {
-            let mut col = DefaultIndexCollection::<DateTime>::new();
-            make_index(dir, key, &mut col);
-            Arc::new(RwLock::new(Box::new(col)))
-        }
-        Index {
-            index: match ty {
-                "string" => create_str(dir, key),
-                "integer" => create_i(dir, key),
-                "datetime" => create_dt(dir, key),
-                _ => panic!("Index key type should be one of `datetime`, `string`, or `integer`."),
-            },
-            key: key.to_owned(),
-        }
+    /// Make a new `Index` with given index key and corresponding default index
+    /// collection. If `dir` has a value, index will be generated from local
+    /// storage, searching for articles in that directory and its subdirectory.
+    pub fn new(key: &str, ty: &str, dir: Option<&str>) -> Index {
+        let col: Box<IndexCollection> = match ty {
+            "string" => Box::new(DefaultIndexCollection::<String>::new()),
+            "integer" => Box::new(DefaultIndexCollection::<i64>::new()),
+            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new()),
+            _ => panic!("Index key type should be one of `datetime`, `string`, or `integer`."),
+        };
+        mk_idx(key, col, dir)
     }
     /// Get the index key of the current index.
     pub fn index_key(&self) -> &String {
