@@ -2,10 +2,10 @@ use serde_json::Value as JsonValue;
 
 pub type DateTime = ::chrono::DateTime<::chrono::FixedOffset>;
 
-pub trait IndexType: Sized + Send + Sync + Ord {
+pub trait IndexKeyType: Sized + Send + Sync + Ord {
     fn try_from_json(json: &JsonValue) -> Option<Self>;
 }
-impl IndexType for i64 {
+impl IndexKeyType for i64 {
     fn try_from_json(json: &JsonValue) -> Option<i64> {
         if let Some(ref int) = json.as_i64() {
             return Some(int.to_owned())
@@ -13,7 +13,7 @@ impl IndexType for i64 {
         None
     }
 }
-impl IndexType for String {
+impl IndexKeyType for String {
     fn try_from_json(json: &JsonValue) -> Option<String> {
         if let Some(ref string) = json.as_str() {
             return Some(string.to_string())
@@ -21,7 +21,7 @@ impl IndexType for String {
         None
     }
 }
-impl IndexType for DateTime {
+impl IndexKeyType for DateTime {
     fn try_from_json(json: &JsonValue) -> Option<DateTime> {
         if let Some(ref rfc3339) = json.as_str() {
             if let Ok(dt) = DateTime::parse_from_rfc3339(rfc3339) {
@@ -32,30 +32,30 @@ impl IndexType for DateTime {
     }
 }
 
-pub struct IndexItem<T: IndexType> {
+struct IndexItem<T: IndexKeyType> {
     pub key: T,
     pub path: String,
 }
 
-pub trait IndexCollectionBase: Send + Sync {
+pub trait IndexCollection: Send + Sync {
     fn insert(&mut self, path: String, key: &JsonValue);
     fn get_range(&self, skip: usize, take: usize) -> Vec<String>;
     fn remove(&mut self, path: &str);
 }
 
-pub struct IndexCollection<T: IndexType> {
+pub struct DefaultIndexCollection<T: IndexKeyType> {
     index: Vec<IndexItem<T>>,
     reverse: bool,
 }
-impl<T: IndexType> IndexCollection<T> {
-    pub fn new() -> IndexCollection<T> {
-        IndexCollection {
+impl<T: IndexKeyType> DefaultIndexCollection<T> {
+    pub fn new() -> DefaultIndexCollection<T> {
+        DefaultIndexCollection {
             index: Vec::new(),
             reverse: true,
         }
     }
 }
-impl<T: IndexType> IndexCollectionBase for IndexCollection<T> {
+impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
     fn insert(&mut self, path: String, key: &JsonValue) {
         match if self.reverse {
             self.index.binary_search_by(|item| item.path.cmp(&path).reverse())
@@ -104,7 +104,7 @@ impl DumbIndexCollection {
         DumbIndexCollection()
     }
 }
-impl IndexCollectionBase for DumbIndexCollection {
+impl IndexCollection for DumbIndexCollection {
     fn insert(&mut self, _path: String, _key: &JsonValue) {}
     fn get_range(&self, _skip: usize, _take: usize) -> Vec<String> { Vec::new() }
     fn remove(&mut self, _path: &str) {}

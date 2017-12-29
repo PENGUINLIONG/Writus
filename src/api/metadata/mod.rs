@@ -57,6 +57,9 @@ impl MetadataApi {
         let json = ::serde_json::from_slice::<JsonValue>(req.body())
             .map_err(|err| Error::bad_request(ERR_JSON).with_cause(err))?;
         if json.is_object() {
+            if let Some(ref key) = json.get(self.index.index_key()) {
+                self.index.write().unwrap().insert(id, key);
+            }
             Ok(json)
         } else {
             Err(Error::bad_request(ERR_JSON))
@@ -80,6 +83,10 @@ impl MetadataApi {
         let id = req.path_segs().join("/");
         let param = req.to_param::<Param>()?;
         if let Some(keys) = param.keys {
+            // If the index key is removed, remove it from index.
+            if keys.contains(self.index.index_key()) {
+                self.index.write().unwrap().remove(&id);
+            }
             self.cache.get(&id)
                 .map(|cache| {
                     let mut guard = cache.write().unwrap();
@@ -88,6 +95,8 @@ impl MetadataApi {
                     }
                 })
         } else {
+            // All metadata are removed, remove it from index.
+            self.index.write().unwrap().remove(&id);
             self.cache.remove(&id)
         }
         .map(|_| Response::new())

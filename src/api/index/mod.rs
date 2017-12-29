@@ -5,27 +5,38 @@ use serde_json::Value as JsonValue;
 use walkdir::WalkDir;
 
 mod index_map;
-use self::index_map::*;
+use self::index_map::{DateTime, DumbIndexCollection,
+    DefaultIndexCollection};
+pub use self::index_map::IndexCollection;
 
 #[derive(Clone)]
 pub struct Index {
-    index: Arc<RwLock<Box<IndexCollectionBase>>>,
+    index: Arc<RwLock<Box<IndexCollection>>>,
     key: String,
 }
 impl Index {
-    pub fn create(dir: &str, key: &str, ty: &str) -> Index {
-        fn create_str(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollectionBase>>> {
-            let mut col = IndexCollection::<String>::new();
+    /// Make a new `Index` with given index collection and index key.
+    pub fn new<T>(col: T, key: &str) -> Index
+        where T: 'static + IndexCollection {
+        Index {
+            index: Arc::new(RwLock::new(Box::new(col))),
+            key: key.to_owned(),
+        }
+    }
+    /// Generate index from local storage.
+    pub fn gen(dir: &str, key: &str, ty: &str) -> Index {
+        fn create_str(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollection>>> {
+            let mut col = DefaultIndexCollection::<String>::new();
             make_index(dir, key, &mut col);
             Arc::new(RwLock::new(Box::new(col)))
         }
-        fn create_i(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollectionBase>>> {
-            let mut col = IndexCollection::<i64>::new();
+        fn create_i(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollection>>> {
+            let mut col = DefaultIndexCollection::<i64>::new();
             make_index(dir, key, &mut col);
             Arc::new(RwLock::new(Box::new(col)))
         }
-        fn create_dt(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollectionBase>>> {
-            let mut col = IndexCollection::<DateTime>::new();
+        fn create_dt(dir: &str, key: &str) -> Arc<RwLock<Box<IndexCollection>>> {
+            let mut col = DefaultIndexCollection::<DateTime>::new();
             make_index(dir, key, &mut col);
             Arc::new(RwLock::new(Box::new(col)))
         }
@@ -39,11 +50,13 @@ impl Index {
             key: key.to_owned(),
         }
     }
-    pub fn index_key(&self) -> &str {
+    /// Get the index key of the current index.
+    pub fn index_key(&self) -> &String {
         &self.key
     }
 }
 impl Default for Index {
+    /// Make a `Index` that do literally nothing.
     fn default() -> Index {
         Index {
             index: Arc::new(RwLock::new(Box::new(DumbIndexCollection::new()))),
@@ -52,12 +65,12 @@ impl Default for Index {
     }
 }
 impl Deref for Index {
-    type Target = RwLock<Box<IndexCollectionBase>>;
+    type Target = RwLock<Box<IndexCollection>>;
     fn deref(&self) -> &Self::Target {
         &*self.index
     }
 }
-fn make_index(dir: &str, key: &str, index: &mut IndexCollectionBase) {
+fn make_index(dir: &str, key: &str, index: &mut IndexCollection) {
     info!("Indexing files with key '{}'.", key);
     for entry in WalkDir::new(&dir)
         .into_iter()

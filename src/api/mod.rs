@@ -65,7 +65,7 @@ pub fn api_v1(extra: TomlValue) -> Namespace {
     let extra: V1RawExtra = extra.try_into().expect("Unable to parse fields neccessary to Writium Blog API v1");
     let extra = convert_v1_extra(extra);
     
-    let index = Index::create(&extra.published_dir,
+    let index = Index::gen(&extra.published_dir,
         &extra.index_key, &extra.index_key_type);
 
     let mut post = PostApi::new();
