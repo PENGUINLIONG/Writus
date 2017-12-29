@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use writium_framework::prelude::*;
-use toml::Value as TomlValue;
 use api::PostApi;
 use self::header::{Authorization, Bearer, ContentType};
 use auth::SimpleAuthority;
@@ -24,12 +23,13 @@ fn api() -> PostApi {
 }
 fn indexed_api() -> PostApi {
     use api::Index;
-    let index = Index::default();
+    use serde_json::Value as JsonValue;
+    let index = Index::new("key", "integer", None);
     let mut api = api();
     api.set_entries_per_request(2);
-    index.write().unwrap().push((TomlValue::Integer(0), "/foo".into()));
-    index.write().unwrap().push((TomlValue::Integer(1), "/bar".into()));
-    index.write().unwrap().push((TomlValue::Integer(2), "/baz".into()));
+    index.write().unwrap().insert("/foo".into(), &JsonValue::Number(0.into()));
+    index.write().unwrap().insert("/bar".into(), &JsonValue::Number(1.into()));
+    index.write().unwrap().insert("/baz".into(), &JsonValue::Number(2.into()));
     api.set_index(index);
     api
 }
