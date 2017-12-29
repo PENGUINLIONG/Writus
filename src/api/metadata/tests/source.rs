@@ -18,7 +18,6 @@ impl MockSource {
 impl CacheSource for MockSource {
     type Value = JsonValue;
     fn load(&self, id: &str, create: bool) -> Result<JsonValue> {
-        println!("{}", create);
         if create {
             let map = ::serde_json::value::Map::new();
             Ok(JsonValue::Object(map))

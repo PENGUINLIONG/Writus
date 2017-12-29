@@ -54,6 +54,16 @@ impl<T: IndexKeyType> DefaultIndexCollection<T> {
             asc: asc,
         }
     }
+    fn search_by_key(&self, key: &T) -> usize {
+        match if self.asc {
+            self.index.binary_search_by(|item| item.key.cmp(key))
+        } else {
+            self.index.binary_search_by(|item| item.key.cmp(key).reverse())
+        } {
+            Ok(pos) => pos,
+            Err(pos) => pos,
+        }
+    }
 }
 impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
     fn insert(&mut self, path: &str, key: &JsonValue) {
@@ -71,16 +81,21 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
             }
             return
         };
-        match if self.asc {
-            self.index.binary_search_by(|item| item.key.cmp(&key))
-        } else {
-            self.index.binary_search_by(|item| item.key.cmp(&key).reverse())
-        } {
-            Ok(pos) => self.index[pos].key = key,
-            Err(pos) => self.index.insert(pos, IndexItem {
-                key: key,
-                path: path.to_owned(),
-            }),
+        match self.index.iter().position(|item| (&*item.path).eq(path)) {
+            Some(pos) => {
+                let mut item = self.index.remove(pos);
+                let new_pos = self.search_by_key(&key);
+                item.key = key;
+                self.index.insert(new_pos, item);
+            },
+            None => {
+                let new_pos = self.search_by_key(&key);
+                self.index.insert(new_pos,
+                IndexItem {
+                    key: key,
+                    path: path.to_owned(),
+                })
+            },
         }
     }
     fn get_range(&self, skip: usize, take: usize) -> Vec<String> {
@@ -96,7 +111,7 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
             .collect::<Vec<_>>()
     }
     fn remove(&mut self, path: &str) {
-        if let Ok(pos) = self.index.binary_search_by(|item| (&*item.path).cmp(path)) {
+        if let Some(pos) = self.index.iter().position(|item| (&*item.path).eq(path)) {
             self.index.remove(pos);
         }
     }
