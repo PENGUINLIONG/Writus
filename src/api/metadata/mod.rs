@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use serde_json::Value as JsonValue;
 use writium_framework::prelude::*;
 use self::header::ContentType;
@@ -7,6 +7,8 @@ use writium_cache::{Cache, DumbCacheSource};
 use super::Index;
 
 mod source;
+#[cfg(test)]
+mod tests;
 
 use self::source::DefaultSource;
 
@@ -39,33 +41,31 @@ impl MetadataApi {
         self.index = index;
     }
 
-    fn patch_cache<F>(&self, req: &mut Request, f: F) -> ApiResult
-        where F: 'static + FnOnce(Arc<RwLock<JsonValue>>, JsonValue) {
+    fn patch_cache<F>(&self, req: &mut Request, id: &str, f: F) -> ApiResult
+        where F: 'static + FnOnce(JsonValue) {
         use writium_framework::hyper::header::ContentType;
 
         self.auth.authorize((), &req)?;
         
-        let id = req.path_segs().join("/");
         let ctype = req.header::<ContentType>()
             .ok_or(Error::bad_request(ERR_MISSING_CONTENT_TYPE))?;
         if ctype.0.type_() != "application" || ctype.0.subtype() != "json" {
             return Err(Error::new(StatusCode::UnsupportedMediaType, ERR_JSON))
         }
 
-        let cache = self.cache.get(&id)
-            .or(self.cache.create(&id))?;
         let json = ::serde_json::from_slice::<JsonValue>(req.body())
             .map_err(|err| Error::bad_request(ERR_JSON).with_cause(err))?;
         if json.is_object() {
+            // If index key value is changed, update the index.
             if let Some(ref key) = json.get(self.index.index_key()) {
-                self.index.write().unwrap().insert(id, key);
+                self.index.write().unwrap().insert(&id, key);
             }
             Ok(json)
         } else {
             Err(Error::bad_request(ERR_JSON))
         }
         .map(|json| {
-            f(cache, json);
+            f(json);
             Response::new()
         })
     }
@@ -75,7 +75,6 @@ impl MetadataApi {
     fn delete(&self, req: &mut Request) -> ApiResult {
         #[derive(Deserialize)]
         struct Param {
-            #[serde(rename="key")]
             pub keys: Option<Vec<String>>,
         }
         self.auth.authorize((), &req)?;
@@ -90,8 +89,9 @@ impl MetadataApi {
             self.cache.get(&id)
                 .map(|cache| {
                     let mut guard = cache.write().unwrap();
+                    let obj_ref = guard.as_object_mut().unwrap();
                     for key in keys {
-                        guard.as_object_mut().unwrap().remove(&key);
+                        obj_ref.remove(&key);
                     }
                 })
         } else {
@@ -108,11 +108,10 @@ impl MetadataApi {
         let id = req.path_segs().join("/");
         #[derive(Deserialize)]
         struct Param {
-            #[serde(rename="key")]
             pub keys: Option<Vec<String>>,
         }
         let cache = self.cache.get(&id)?;
-        let  param = req.to_param::<Param>()?;
+        let param = req.to_param::<Param>()?;
 
         let guard = cache.read().unwrap();
         let json = if param.keys.is_none() {
@@ -133,14 +132,18 @@ impl MetadataApi {
 
     /// PUT `metadata/<path..>`
     fn put(&self, req: &mut Request) -> ApiResult {
-        self.patch_cache(req, |cache, json| {
+        let id = req.path_segs().join("/");
+        let cache = self.cache.create(&id)?;
+        self.patch_cache(req, &id, move |json| {
             let mut guard = cache.write().unwrap();
             *guard = json;
         })
     }
     /// PATCH `metadata/<path..>`
     fn patch(&self, req: &mut Request) -> ApiResult {
-        self.patch_cache(req, |cache, json| {
+        let id = req.path_segs().join("/");
+        let cache = self.cache.get(&id)?;
+        self.patch_cache(req, &id, move |json| {
             let mut guard = cache.write().unwrap();
             let obj = guard.as_object_mut().unwrap();
             for item in json.as_object().unwrap() {
