@@ -2,6 +2,11 @@
 name = "writus"
 version = "0.1.0"
 authors = ["PENGUINLIONG <admin@penguinliong.moe>"]
+repository = "https://github.com/PENGUINLIONG/Writus"
+description = "Static blog generator based on Writium Framework."
+keywords = ["writium", "web", "blog"]
+catagories = ["web-programming"]
+license = "MIT"
 
 [dependencies]
 
