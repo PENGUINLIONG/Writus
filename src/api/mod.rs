@@ -80,7 +80,7 @@ pub fn api_v1(extra: TomlValue) -> Namespace {
     metadata.set_auth(extra.auth.clone());
     metadata.set_cache_default(&extra.published_dir);
 
-    Namespace::new(&[])
+    Namespace::new(&["api", "v1"])
         .with_api(post)
         .with_api(comment)
         .with_api(metadata)

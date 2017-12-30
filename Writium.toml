@@ -1,5 +1,7 @@
 [extra]
 
+[static_pages]
+
 [extra.allowed_exts]
 # Images.
 bmp = "image/bmp"

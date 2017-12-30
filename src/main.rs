@@ -35,7 +35,9 @@ extern crate env_logger;
 mod auth;
 pub mod api;
 pub mod service;
+pub mod static_page;
 
+use std::collections::HashMap;
 use writium::Writium;
 use hyper::server::Http;
 use service::WritiumService;
@@ -64,6 +66,9 @@ pub struct WritusConfig {
     /// * `template_dir` = `./published/template`
     /// * `digests_per_page` = `5`
     pub extra: Option<::toml::Value>,
+
+    /// Static pages.
+    pub static_pages: Option<HashMap<String, String>>,
 }
 impl WritusConfig{
     fn load() -> WritusConfig {
@@ -155,7 +160,18 @@ fn main() {
 
     let extra = cfg.extra.unwrap();
     let mut writium = Writium::new();
+    // Load static pages.
+    if let Some(ref static_pages) = cfg.static_pages.as_ref() {
+        for (ref name, ref path) in static_pages.iter() {
+            info!("Loading static page: {}", path);
+            match ::static_page::StaticPage::from_file(name, path) {
+                Ok(sp) => writium.bind(sp),
+                Err(err) => warn!("Error occured loading static page: {}", err),
+            }
+        }
+    }
     // Load all Writium v1 APIs.
+    info!("Loading Writus APIs.");
     writium.bind(api::api_v1(extra.clone()));
 
     let service = WritiumService::new(writium);
