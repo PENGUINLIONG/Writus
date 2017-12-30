@@ -177,7 +177,7 @@ impl CommentApi {
     fn post(&self, req: &mut Request) -> ApiResult {
         let id = req.path_segs().join("/");
         let comment = req.to_json::<Comment>()?;
-        let cache = self.cache.get(&id)?;
+        let cache = self.cache.create(&id)?;
         // There are comments already loaded, start indexing from the last one.
         let index = if let Some((index, _)) = cache.read().unwrap().iter().last() {
             Some(index.to_owned())
