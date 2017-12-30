@@ -7,7 +7,7 @@ extern crate tokio_rustls;
 extern crate tokio_service;
 
 // Writium.
-extern crate writium_framework;
+extern crate writium;
 extern crate writium_auth;
 extern crate writium_cache;
 
@@ -36,7 +36,7 @@ mod auth;
 pub mod api;
 pub mod service;
 
-use writium_framework::Writium;
+use writium::Writium;
 use hyper::server::Http;
 use service::WritiumService;
 

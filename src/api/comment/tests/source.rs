@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
 use writium_cache::CacheSource;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use api::comment::Comment;
 
 fn make_comment(author: &str, content: &str) -> Comment {

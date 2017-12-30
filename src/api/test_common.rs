@@ -1,4 +1,4 @@
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use self::header::ContentType;
 
 pub fn test_ok(api: &Api, mut req: Request) -> Response {

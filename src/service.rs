@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
-use writium_framework::Writium;
-use writium_framework::proto::{HyperRequest, HyperResponse};
+use writium::Writium;
+use writium::proto::{HyperRequest, HyperResponse};
 use tokio_service::Service;
 
 pub struct WritiumService(Arc<RwLock<Option<Writium>>>);

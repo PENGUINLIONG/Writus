@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use api::PostApi;
 use self::header::{Authorization, Bearer, ContentType};
 use auth::SimpleAuthority;

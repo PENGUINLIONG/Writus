@@ -1,6 +1,6 @@
 use std::io::{Read, Write, BufReader, BufWriter};
 use std::fs::{File, OpenOptions};
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use writium_cache::CacheSource;
 use serde_json::Value as JsonValue;
 use toml::Value as TomlValue;

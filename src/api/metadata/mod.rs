@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use serde_json::Value as JsonValue;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use self::header::ContentType;
 use writium_auth::{Authority, DumbAuthority};
 use writium_cache::{Cache, DumbCacheSource};
@@ -43,7 +43,7 @@ impl MetadataApi {
 
     fn patch_cache<F>(&self, req: &mut Request, id: &str, f: F) -> ApiResult
         where F: 'static + FnOnce(JsonValue) {
-        use writium_framework::hyper::header::ContentType;
+        use writium::hyper::header::ContentType;
 
         self.auth.authorize((), &req)?;
         

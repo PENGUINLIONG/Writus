@@ -2,7 +2,7 @@ use std::sync::Arc;
 use hyper::header::ContentType;
 use pulldown_cmark::Parser;
 use pulldown_cmark::{Options as ParserOptions, OPTION_ENABLE_TABLES};
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use writium_auth::Authority;
 use writium_cache::Cache;
 use super::index::Index;

@@ -15,9 +15,9 @@ tokio-rustls = "0.4"
 tokio-service = "0.1"
 
 # Writium.
-writium-auth = { version="0.1", path="/writium-auth" }
-writium-cache = { version="0.1", path="/writium-cache" }
-writium-framework = { version="0.1", path="/writium-framework" }
+writium = "0.1"
+writium-auth = "0.1"
+writium-cache = "0.1"
 
 # Content generation.
 path_buf = "0.1"

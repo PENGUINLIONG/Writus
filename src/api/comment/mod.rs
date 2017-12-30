@@ -2,7 +2,7 @@
 ///! All comments of an article are stored in `comments.json`.
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use writium_auth::Authority;
 use writium_cache::Cache;
 

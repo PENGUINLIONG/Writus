@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::collections::HashMap;
 use std::sync::Arc;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use self::header::ContentType;
-use writium_framework::hyper::mime::Mime;
+use writium::hyper::mime::Mime;
 use writium_auth::Authority;
 use auth::SimpleAuthority;
 

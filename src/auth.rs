@@ -1,5 +1,5 @@
 use writium_auth::*;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use hyper::header::{Authorization, Bearer};
 
 pub struct SimpleAuthority {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use serde_json::Value as JsonValue;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use writium_cache::Cache;
 use api::index::Index;
 use auth::SimpleAuthority;

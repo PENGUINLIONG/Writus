@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use writium_cache::CacheSource;
 
 pub struct MockSource(Mutex<HashMap<String, String>>);

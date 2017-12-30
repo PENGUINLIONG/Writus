@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use toml::Value as TomlValue;
 use auth::SimpleAuthority;
-use writium_framework::prelude::*;
-use writium_framework::hyper::mime::Mime;
+use writium::prelude::*;
+use writium::hyper::mime::Mime;
 
 pub mod index;
 

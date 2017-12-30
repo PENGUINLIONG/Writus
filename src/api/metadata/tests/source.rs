@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use writium_cache::CacheSource;
 use serde_json::Value as JsonValue;
 

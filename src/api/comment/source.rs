@@ -3,7 +3,7 @@ use std::io::{BufReader, BufWriter};
 use std::fs::{File, OpenOptions};
 use serde_json as json;
 use writium_cache::CacheSource;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use super::Comment;
 
 const ERR_ACCESS: &'static str = "Cannot access to requested resource.";

@@ -1,6 +1,6 @@
 use std::fs::{File, OpenOptions};
 use writium_cache::CacheSource;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 
 const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
 

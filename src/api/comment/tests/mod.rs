@@ -3,7 +3,7 @@ use std::sync::Arc;
 use auth::SimpleAuthority;
 use super::{Comment, CommentApi};
 use writium_cache::Cache;
-use writium_framework::prelude::*;
+use writium::prelude::*;
 use api::test_common::*;
 use self::header::{Authorization, Bearer};
 
