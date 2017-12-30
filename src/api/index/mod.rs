@@ -93,9 +93,9 @@ fn make_index(dir: &str, key: &str, index: &mut IndexCollection) {
 fn get_index_val_for(parent: &Path, key: &str) -> Option<JsonValue> {
     use std::fs::File;
     use std::io::Read;
-    // Find `metadata.toml`.
+    // Find `metadata.json`.
     let mut text = Vec::new();
-    let mut file = File::open(path_buf![parent, "metadata.toml"])
+    let mut file = File::open(path_buf![parent, "metadata.json"])
         .map_err(|err| error!("Unable to open metadata from '{}': {}",
             parent.to_string_lossy(), err))
         .ok()?;
@@ -103,7 +103,7 @@ fn get_index_val_for(parent: &Path, key: &str) -> Option<JsonValue> {
         .map_err(|err| error!("Unable to read metadata from '{}': {}",
             parent.to_string_lossy(), err))
         .ok()?;
-    let json = ::toml::from_slice::<JsonValue>(&text)
+    let json = ::serde_json::from_slice::<JsonValue>(&text)
         .map_err(|err| warn!("Unable to serialize content of '{}': {}",
             parent.to_string_lossy(), err))
         .ok()?;

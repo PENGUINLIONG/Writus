@@ -3,7 +3,6 @@ use std::fs::{File, OpenOptions};
 use writium::prelude::*;
 use writium_cache::CacheSource;
 use serde_json::Value as JsonValue;
-use toml::Value as TomlValue;
 
 pub struct DefaultSource {
     dir: String,
@@ -20,7 +19,7 @@ impl DefaultSource {
             .create(!read)
             .read(read)
             .write(!read)
-            .open(path_buf![&self.dir, id, "metadata.toml"])
+            .open(path_buf![&self.dir, id, "metadata.json"])
     }
 }
 impl CacheSource for DefaultSource {
@@ -30,13 +29,13 @@ impl CacheSource for DefaultSource {
             let file = file.ok()?;
             let mut text = Vec::new();
             BufReader::new(file).read_to_end(&mut text).ok()?;
-            let toml = ::toml::from_slice(&text);
-            if toml.is_err() {
-                println!("{}", toml.unwrap_err());
+            let json = ::serde_json::from_slice(&text);
+            if json.is_err() {
+                println!("{}", json.unwrap_err());
                 return None
             }
-            let toml = toml.ok()?;
-            Some(toml_to_json(&toml))
+            let json = json.ok()?;
+            Some(json)
         }
         if let Some(json) = _load(self.open_metadata(id, true)) {
             if json.is_object() {
@@ -58,8 +57,8 @@ impl CacheSource for DefaultSource {
     fn unload(&self, id: &str, val: &Self::Value) -> Result<()> {
         if let Err(_) = self.open_metadata(id, false)
             .and_then(|file| {
-                let toml = ::toml::to_string_pretty(&json_to_toml(val)).unwrap();
-                BufWriter::new(file).write_all(toml.as_bytes())
+                let json = ::serde_json::to_string_pretty(&val).unwrap();
+                BufWriter::new(file).write_all(json.as_bytes())
             }) {
            Err(Error::internal("Unable to write to metadata file. New data is not written."))
         } else {
@@ -68,61 +67,10 @@ impl CacheSource for DefaultSource {
     }
     fn remove(&self, id: &str) -> Result<()> {
         use std::fs::remove_file;
-        if let Err(_) = remove_file(path_buf![&self.dir, id, "metadata.toml"]) {
+        if let Err(_) = remove_file(path_buf![&self.dir, id, "metadata.json"]) {
            Err(Error::internal("Unable to remove metadata file."))
         } else {
            Ok(())
         }
-    }
-}
-
-fn toml_to_json(toml: &TomlValue) -> JsonValue {
-    use self::TomlValue as Toml;
-    use self::JsonValue as Json;
-
-    match toml {
-        &Toml::String(ref s) => Json::String(s.clone()),
-        &Toml::Integer(i) => Json::Number(i.into()),
-        &Toml::Float(f) => {
-            let n = if let Some(f) = ::serde_json::Number::from_f64(f) { f }
-                else { warn!("Float infinite and nan are not allowed in metadata. Original data is replaced by 0."); 0.into() };
-            Json::Number(n)
-        }
-        &Toml::Boolean(b) => Json::Bool(b),
-        &Toml::Array(ref arr) => Json::Array(arr.iter().map(toml_to_json).collect()),
-        &Toml::Table(ref table) => Json::Object(table.iter().map(|(k, v)| {
-            (k.to_string(), toml_to_json(v))
-        }).collect()),
-        &Toml::Datetime(ref dt) => Json::String(dt.to_string()),
-    }
-}
-fn json_to_toml(json: &JsonValue) -> TomlValue {
-    use self::TomlValue as Toml;
-    use self::JsonValue as Json;
-    use std::str::FromStr;
-    use toml::value::Datetime;
-
-    match json {
-        &Json::String(ref s) => if let Ok(d) = Datetime::from_str(&s) {
-                Toml::Datetime(d)
-            } else {
-                Toml::String(s.clone())
-            },
-        &Json::Number(ref n) => if n.is_i64() {
-                Toml::Integer(n.as_i64().unwrap())
-            } else if n.is_u64() {
-                Toml::Integer(n.as_u64().unwrap() as i64)
-            } else {
-                Toml::Float(n.as_f64().unwrap())
-            },
-        &Json::Bool(b) => Toml::Boolean(b),
-        &Json::Array(ref arr) => Toml::Array(arr.iter().map(json_to_toml).collect()),
-        &Json::Object(ref table) => Toml::Table(table.iter().map(|(k, v)| {
-            (k.to_string(), json_to_toml(&v))
-        }).collect()),
-        &Json::Null => {
-            warn!("Found null field. Empty string is inserted.");
-            Toml::String(String::new())
-        },
     }
 }
