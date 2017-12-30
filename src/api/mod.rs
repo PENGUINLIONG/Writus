@@ -79,6 +79,7 @@ pub fn api_v1(extra: TomlValue) -> Namespace {
     let mut metadata = MetadataApi::new();
     metadata.set_auth(extra.auth.clone());
     metadata.set_cache_default(&extra.published_dir);
+    metadata.set_index(index.clone());
 
     Namespace::new(&["api", "v1"])
         .with_api(post)

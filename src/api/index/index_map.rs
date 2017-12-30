@@ -87,6 +87,7 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
                 let new_pos = self.search_by_key(&key);
                 item.key = key;
                 self.index.insert(new_pos, item);
+                info!("Updated index key for article: {}", path);
             },
             None => {
                 let new_pos = self.search_by_key(&key);
@@ -94,7 +95,8 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
                 IndexItem {
                     key: key,
                     path: path.to_owned(),
-                })
+                });
+                info!("Indexed article: {}", path);
             },
         }
     }
