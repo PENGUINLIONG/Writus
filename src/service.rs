@@ -22,6 +22,7 @@ impl Service for WritiumService {
         use futures::Future;
 
         let method = req.method().clone();
+        let uri = req.uri().clone();
         let from = Instant::now();
         // When the write lock is not released, the option can never be `None`.
         let future = self.0.read().unwrap().as_ref().unwrap().route(req);
@@ -29,7 +30,7 @@ impl Service for WritiumService {
             let delta = from.elapsed();
             let delta = (delta.as_secs() as f64) * 1000.0 + (delta.subsec_nanos() as f64) / 1_000_000.0;
             match result {
-                Ok(ref res) => info!("{} -> {} (time = {}ms)", method.as_ref(), res.status(), delta),
+                Ok(ref res) => info!("{} {} -> {} (time = {}ms)", method.as_ref(), uri.as_ref(), res.status(), delta),
                 Err(ref err) => warn!("Hyper error occured: {}", err),
             }
             result
