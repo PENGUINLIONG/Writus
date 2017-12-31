@@ -20,7 +20,7 @@ pub struct Extra {
     pub index_key: String,
     pub index_key_type: String,
     pub entries_per_request: u64,
-    pub allowed_exts: Arc<HashMap<String, Mime>>,
+    pub allowed_exts: HashMap<String, Mime>,
     pub template_dir: String,
 }
 
@@ -35,12 +35,10 @@ fn raw_to_extra(extra: RawExtra) -> Extra {
         index_key: extra.index_key.unwrap_or("published".to_string()),
         index_key_type: extra.index_key_type.unwrap_or("datetime".to_string()),
         entries_per_request: extra.entries_per_request.unwrap_or(5),
-        allowed_exts: Arc::new(
-            extra.allowed_exts.unwrap_or_default()
-                .into_iter()
-                .map(|(x, y)| (x, y.parse().expect("Unable to parse MIME in field `allowed_ext`.")))
-                .collect()
-        ),
+        allowed_exts: extra.allowed_exts.unwrap_or_default()
+            .into_iter()
+            .map(|(x, y)| (x, y.parse().expect("Unable to parse MIME in field `allowed_ext`.")))
+            .collect(),
         template_dir: extra.template_dir.unwrap_or("./templates".to_owned()),
     }
 }

@@ -5,8 +5,7 @@ use std::sync::Arc;
 use writium::prelude::*;
 use self::header::ContentType;
 use writium::hyper::mime::Mime;
-use writium_auth::Authority;
-use auth::SimpleAuthority;
+use writium_auth::{Authority, DumbAuthority};
 
 const ERR_MISSING_CONTENT_TYPE: &'static str = "Content type should be denoted for verification use.";
 const ERR_MIME_NOT_FOUND: &'static str = "No corresponding MIME matches the inquired file type (extension). Maybe the file type is intentionally prevented from being transferred.";
@@ -14,18 +13,27 @@ const ERR_MIME_EXT_MISMATCH: &'static str = "Path extension doesn't accord with 
 const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
 
 pub struct ResourceApi {
-    auth: Arc<SimpleAuthority>,
+    auth: Arc<Authority<Privilege=()>>,
     published_dir: String,
-    allowed_exts: Arc<HashMap<String, Mime>>,
+    allowed_exts: HashMap<String, Mime>,
 }
 
 impl ResourceApi {
-    pub fn new(extra: &super::V1Extra) -> ResourceApi {
+    pub fn new() -> ResourceApi {
         ResourceApi {
-            auth: extra.auth.clone(),
-            published_dir: extra.published_dir.clone(),
-            allowed_exts: extra.allowed_exts.clone(),
+            auth: Arc::new(DumbAuthority::new()),
+            published_dir: String::new(),
+            allowed_exts: HashMap::new(),
         }
+    }
+    pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {
+        self.auth = auth;
+    }
+    pub fn set_published_dir(&mut self, published_dir: &str) {
+        self.published_dir = published_dir.to_owned();
+    }
+    pub fn set_allowed_exts(&mut self, allowed_exts: HashMap<String, Mime>) {
+        self.allowed_exts = allowed_exts;
     }
 
     fn get(&self, req: &mut Request) -> ApiResult {

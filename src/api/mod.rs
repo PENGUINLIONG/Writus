@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use toml::Value as TomlValue;
 use writium::prelude::*;
 
@@ -38,9 +37,14 @@ pub fn api_v1(extra: TomlValue) -> Namespace {
     metadata.set_cache_default(&extra.published_dir);
     metadata.set_index(index.clone());
 
+    let mut resource = ResourceApi::new();
+    resource.set_auth(extra.auth.clone());
+    resource.set_published_dir(&extra.published_dir);
+    resource.set_allowed_exts(extra.allowed_exts.clone());
+
     Namespace::new(&["api", "v1"])
         .with_api(post)
         .with_api(comment)
         .with_api(metadata)
-        .with_api(ResourceApi::new(&extra))
+        .with_api(resource)
 }

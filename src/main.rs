@@ -39,7 +39,6 @@ pub mod view;
 pub mod service;
 pub mod static_page;
 
-use std::collections::HashMap;
 use writium::Writium;
 use hyper::server::Http;
 use service::WritiumService;
