@@ -40,6 +40,9 @@ impl MetadataApi {
     pub fn set_index(&mut self, index: Index) {
         self.index = index;
     }
+    pub fn clone_cache(&self) -> Cache<JsonValue> {
+        self.cache.clone()
+    }
 
     fn patch_cache<F>(&self, req: &mut Request, id: &str, f: F) -> ApiResult
         where F: 'static + FnOnce(JsonValue) {

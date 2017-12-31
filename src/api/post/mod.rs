@@ -48,6 +48,9 @@ impl PostApi {
     pub fn set_index(&mut self, index: Index) {
         self.index = index;
     }
+    pub fn clone_cache(&self) -> Cache<JsonValue> {
+        self.cache.clone()
+    }
 
     fn get_content(&self, req: &mut Request) -> ApiResult {
         fn get_digest(full_text: &str) -> String {

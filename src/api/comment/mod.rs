@@ -50,6 +50,9 @@ impl CommentApi {
     pub fn set_entries_per_request(&mut self, entries_per_request: usize) {
         self.entries_per_request = entries_per_request;
     }
+    pub fn clone_cache(&self) -> Cache<JsonValue> {
+        self.cache.clone()
+    }
 
     /// DELETE `/comments/<path..>?{index}`  
     /// DELETE `/comments/<path..>?[from][to][{from, to}]`  
