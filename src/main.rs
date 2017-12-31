@@ -40,6 +40,7 @@ pub mod service;
 pub mod static_page;
 
 use writium::Writium;
+use writium::prelude::*;
 use hyper::server::Http;
 use service::WritiumService;
 
@@ -94,7 +95,9 @@ fn main() {
     }
     // Load all Writium v1 APIs.
     info!("Loading Writus APIs.");
-    writium.bind(api::api_v1(extra));
+    let extra = ::config::v1::Extra::from(extra);
+    let v1: Namespace = extra.into();
+    writium.bind(v1);
 
     let service = WritiumService::new(writium);
     let shut_down_handle = service.writium();

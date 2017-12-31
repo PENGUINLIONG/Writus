@@ -48,7 +48,7 @@ impl PostApi {
     pub fn set_index(&mut self, index: Index) {
         self.index = index;
     }
-    pub fn clone_cache(&self) -> Cache<JsonValue> {
+    pub fn clone_cache(&self) -> Cache<String> {
         self.cache.clone()
     }
 

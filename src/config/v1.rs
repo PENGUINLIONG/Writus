@@ -3,6 +3,7 @@ use std::sync::Arc;
 use auth::SimpleAuthority;
 use toml::Value as TomlValue;
 use writium::hyper::mime::Mime;
+use writium::prelude::*;
 
 #[derive(Deserialize)]
 struct RawExtra {
@@ -23,6 +24,62 @@ pub struct Extra {
     pub allowed_exts: HashMap<String, Mime>,
     pub template_dir: String,
 }
+impl From<Extra> for Namespace {
+    /// Construct a Namespace containing all the v1 api and views.
+    fn from(extra: Extra) -> Namespace {
+        use api::*;
+        use view::*;
+
+        let index = Index::new(&extra.index_key, &extra.index_key_type, Some(&extra.published_dir));
+
+        let mut post_api = PostApi::new();
+        post_api.set_auth(extra.auth.clone());
+        post_api.set_cache_default(&extra.published_dir);
+        post_api.set_index(index.clone());
+        let post_cache = post_api.clone_cache();
+
+        let mut comment_api = CommentApi::new();
+        comment_api.set_auth(extra.auth.clone());
+        comment_api.set_cache_default(&extra.published_dir);
+
+        let mut metadata_api = MetadataApi::new();
+        metadata_api.set_auth(extra.auth.clone());
+        metadata_api.set_cache_default(&extra.published_dir);
+        metadata_api.set_index(index.clone());
+        let metadata_cache = metadata_api.clone_cache();
+
+        let mut resource_api = ResourceApi::new();
+        resource_api.set_auth(extra.auth.clone());
+        resource_api.set_published_dir(&extra.published_dir);
+        resource_api.set_allowed_exts(extra.allowed_exts.clone());
+
+        let apis = Namespace::new(&["api", "v1"])
+            .with_api(post_api)
+            .with_api(comment_api)
+            .with_api(metadata_api)
+            .with_api(resource_api);
+
+        let mut post_view = PostView::new();
+        post_view.set_post_cache(post_cache);
+        post_view.set_metadata_cache(metadata_cache);
+        let post_template = Template::from_file(&extra.template_dir, "post.html")
+            .unwrap_or_default();
+        post_view.set_template(post_template);
+
+        let views = Namespace::new(&[])
+            .with_api(post_view);
+
+        Namespace::new(&[])
+            .with_api(apis)
+            .with_api(views)
+    }
+}
+impl From<TomlValue> for Extra {
+    fn from(extra: TomlValue) -> Extra {
+        let extra: RawExtra = extra.try_into().expect("Unable to parse fields neccessary to Writium Blog API v1");
+        raw_to_extra(extra)
+    }
+}
 
 fn raw_to_extra(extra: RawExtra) -> Extra {
     Extra {
@@ -41,9 +98,4 @@ fn raw_to_extra(extra: RawExtra) -> Extra {
             .collect(),
         template_dir: extra.template_dir.unwrap_or("./templates".to_owned()),
     }
-}
-
-pub fn convert_extra(extra: TomlValue) -> Extra {
-    let extra: RawExtra = extra.try_into().expect("Unable to parse fields neccessary to Writium Blog API v1");
-    raw_to_extra(extra)
 }

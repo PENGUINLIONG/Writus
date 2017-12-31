@@ -5,19 +5,19 @@ use super::template::*;
 
 pub struct PostView {
     template: Template,
-    content_cache: Cache<String>,
+    post_cache: Cache<String>,
     metadata_cache: Cache<JsonValue>,
 }
 impl PostView {
     pub fn new() -> PostView {
         PostView {
             template: Template::default(),
-            content_cache: Cache::new(0, DumbCacheSource::new()),
+            post_cache: Cache::new(0, DumbCacheSource::new()),
             metadata_cache: Cache::new(0, DumbCacheSource::new()),
         }
     }
-    pub fn set_content_cache(&mut self, cache: Cache<String>) {
-        self.content_cache = cache;
+    pub fn set_post_cache(&mut self, cache: Cache<String>) {
+        self.post_cache = cache;
     }
     pub fn set_metadata_cache(&mut self, cache: Cache<JsonValue>) {
         self.metadata_cache = cache;
@@ -28,8 +28,8 @@ impl PostView {
     pub fn render(&self, req: &mut Request) -> ApiResult {
         use self::header::ContentType;
         let id = req.path_segs().join("/");
-        let content_cache = self.content_cache.get(&id)?;
-        let content_guard = content_cache.read().unwrap();
+        let post_cache = self.post_cache.get(&id)?;
+        let content_guard = post_cache.read().unwrap();
         let content: &str = content_guard.as_ref();
         let metadata_cache = self.metadata_cache.get(&id)?;
         let metadata_guard = metadata_cache.read().unwrap();
