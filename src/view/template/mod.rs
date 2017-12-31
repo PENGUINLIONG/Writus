@@ -45,7 +45,7 @@ fn concat_subfragments(base: &Path, mut template: String) -> Result<String, Stri
     }
 }
 fn load_fragement(base: &Path, file_path: &Path) -> Result<String, String> {
-    let file = File::open(file_path)
+    let file = File::open(path_buf![&base, &file_path])
         .map_err(|err| format!("Unable to open template file: {}", err))?;
     let mut reader = BufReader::new(file);
     let mut buf = String::new();
@@ -88,7 +88,7 @@ pub struct Template {
 }
 impl Template {
     pub fn from_file(base: &str, path: &str) -> Option<Template> {
-        info!("Loading template from file: {}", base.to_owned() + path);
+        info!("Loading template from file: {}", [base, path].join("/"));
         let concated = match load_fragement(&PathBuf::from(base), &PathBuf::from(path)) {
             Ok(concated) => concated,
             Err(err) => {
