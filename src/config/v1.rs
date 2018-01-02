@@ -60,14 +60,27 @@ impl From<Extra> for Namespace {
             .with_api(resource_api);
 
         let mut post_view = PostView::new();
-        post_view.set_post_cache(post_cache);
-        post_view.set_metadata_cache(metadata_cache);
+        post_view.set_post_cache(post_cache.clone());
+        post_view.set_metadata_cache(metadata_cache.clone());
         let post_template = Template::from_file(&extra.template_dir, "post.html")
             .unwrap_or_default();
         post_view.set_template(post_template);
 
+        let mut root_view = RootView::new();
+        root_view.set_post_cache(post_cache);
+        root_view.set_metadata_cache(metadata_cache);
+        let digest_template = Template::from_file(&extra.template_dir, "digest.html")
+            .unwrap_or_default();
+        root_view.set_digest_template(digest_template);
+        let index_template = Template::from_file(&extra.template_dir, "index.html")
+            .unwrap_or_default();
+        root_view.set_index_template(index_template);
+        root_view.set_index(index.clone());
+        root_view.set_entries_per_request(extra.entries_per_request as usize);
+
         let views = Namespace::new(&[])
-            .with_api(post_view);
+            .with_api(post_view)
+            .with_api(root_view);
 
         Namespace::new(&[])
             .with_api(apis)

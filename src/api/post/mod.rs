@@ -1,7 +1,5 @@
 use std::sync::Arc;
 use hyper::header::ContentType;
-use pulldown_cmark::Parser;
-use pulldown_cmark::{Options as ParserOptions, OPTION_ENABLE_TABLES};
 use writium::prelude::*;
 use writium_auth::Authority;
 use writium_cache::Cache;
@@ -53,49 +51,14 @@ impl PostApi {
     }
 
     fn get_content(&self, req: &mut Request) -> ApiResult {
-        fn get_digest(full_text: &str) -> String {
-            let mut rv = String::new();
-            let mut lines = full_text.lines();
-            rv.push_str(lines.next().unwrap_or_default());
-            rv.push_str("\n\n");
-            lines.skip_while(|line| line.trim().len() == 0)
-                .take_while(|line| line.trim().len() > 0)
-                .for_each(|line| rv.push_str(line));
-            rv
-        }
-        #[derive(Deserialize)]
-        struct Param {
-            /// Get raw markdown rather than parsed html.
-            raw: Option<bool>,
-            /// Get the title and the first paragraph.
-            digest: Option<bool>,
-        }
-
         let id = req.path_segs().join("/");
-        let param = req.to_param::<Param>()?;
         let cache = self.cache.get(&id)?;
-        let mut text = cache.read().unwrap().clone();
-        // If raw markdown was requested, return right away.
-        if let Some(true) = param.digest {
-            text = get_digest(&text);
-        }
-        let res = if let Some(true) = param.raw {
-            Response::new()
-                .with_header(ContentType(
-                    "text/markdown; charset=UTF-8".parse().unwrap()))
-                .with_body(text.into_bytes())
-        // By default we return the translated HTML.
-        } else {
-            let mut html = String::with_capacity(text.len());
-            let mut opts = ParserOptions::empty();
-            opts.insert(OPTION_ENABLE_TABLES);
-            let parser = Parser::new_ext(&text, opts);
-            ::pulldown_cmark::html::push_html(&mut html, parser);
-            Response::new()
-                .with_header(ContentType(
-                    "text/html; charset=UTF-8".parse().unwrap()))
-                .with_body(html.into_bytes())
-        };
+        let text = cache.read().unwrap();
+        let text_ref: &[u8] = text.as_ref();
+        let res = Response::new()
+            .with_header(ContentType(
+                "text/markdown; charset=UTF-8".parse().unwrap()))
+            .with_body(text_ref);
         Ok(res)
     }
     fn get_index(&self, req: &mut Request) -> ApiResult {

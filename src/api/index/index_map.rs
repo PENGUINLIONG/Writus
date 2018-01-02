@@ -41,6 +41,7 @@ pub trait IndexCollection: Send + Sync {
     fn insert(&mut self, path: &str, key: &JsonValue);
     fn get_range(&self, skip: usize, take: usize) -> Vec<String>;
     fn remove(&mut self, path: &str);
+    fn len(&self) -> usize;
 }
 
 pub struct DefaultIndexCollection<T: IndexKeyType> {
@@ -117,6 +118,9 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
             self.index.remove(pos);
         }
     }
+    fn len(&self) -> usize {
+        self.index.len()
+    }
 }
 
 pub struct DumbIndexCollection();
@@ -129,4 +133,5 @@ impl IndexCollection for DumbIndexCollection {
     fn insert(&mut self, _path: &str, _key: &JsonValue) {}
     fn get_range(&self, _skip: usize, _take: usize) -> Vec<String> { Vec::new() }
     fn remove(&mut self, _path: &str) {}
+    fn len(&self) -> usize { 0 }
 }
