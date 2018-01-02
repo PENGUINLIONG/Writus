@@ -42,7 +42,7 @@ impl PostView {
 }
 impl Api for PostView {
     fn name(&self) -> &[&str] {
-        &["post"]
+        &["posts"]
     }
     fn route(&self, req: &mut Request) -> ApiResult {
         use self::header::Allow;
