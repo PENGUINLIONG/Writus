@@ -1,7 +1,7 @@
 use serde_json::Value as JsonValue;
 
 pub trait TemplateSection: Send + Sync {
-    fn get_section(&self, content: &str, vars: &JsonValue, out: &mut String);
+    fn get_section(&self, meta: &JsonValue, extra: &[(&str, &str)], out: &mut String);
 }
 pub struct StringSection {
     string: String
@@ -14,7 +14,7 @@ impl StringSection {
     }
 }
 impl TemplateSection for StringSection {
-    fn get_section(&self, _: &str, _: &JsonValue, out: &mut String) {
+    fn get_section(&self, _meta: &JsonValue, _extra: &[(&str, &str)], out: &mut String) {
         out.push_str(&self.string)
     }
 }
@@ -29,29 +29,18 @@ impl MetadataSection {
     }
 }
 impl TemplateSection for MetadataSection {
-    fn get_section(&self, _: &str, vars: &JsonValue, out: &mut String) {
-        let var = match vars.get(&self.key) {
-            Some(var) => var,
-            None => return,
-        };
-        if let Some(string) = var.as_str() {
-            out.push_str(string)
-        } else {
-            match ::serde_json::to_string(var) {
-                Ok(s) => out.push_str(&s),
-                Err(err) => out.push_str(&format!("!!{}!!", err)),
+    fn get_section(&self, meta: &JsonValue, extra: &[(&str, &str)], out: &mut String) {
+        if let Some(meta) = meta.get(&self.key) {
+            if let Some(string) = meta.as_str() {
+                out.push_str(string);
+            } else if let Ok(string) = ::serde_json::to_string(meta) {
+                out.push_str(&string);
             }
+        } else if let Some(&(_, extra)) = extra.into_iter()
+            .find(|&&(key, _)| key == &self.key) {
+            out.push_str(extra);
+        } else {
+            // Do nothing when there is no such value.
         }
-    }
-}
-pub struct ContentSection();
-impl ContentSection {
-    pub fn new() -> ContentSection {
-        ContentSection()
-    }
-}
-impl TemplateSection for ContentSection {
-    fn get_section(&self, content: &str, _: &JsonValue, out: &mut String) {
-        out.push_str(&content);
     }
 }

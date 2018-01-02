@@ -72,11 +72,7 @@ fn compile(mut concated: String) -> Vec<Box<TemplateSection>> {
                 .splitn(2, ' ')
                 .collect();
             // `parts[0]` can be nothing other than 'var'.
-            if parts[1] == "content" {
-                rv.push(Box::new(ContentSection::new()));
-            } else {
-                rv.push(Box::new(MetadataSection::new(parts[1].to_owned())));
-            }
+            rv.push(Box::new(MetadataSection::new(parts[1].to_owned())));
             // Ignore unknown processing instructions.
         }
         concated.drain(..(end + 2));
@@ -98,10 +94,10 @@ impl Template {
         };
         Some(Template { sections: compile(concated) })
     }
-    pub fn render(&self, content: &str, meta: &JsonValue) -> String {
+    pub fn render(&self, meta: &JsonValue, extra: &[(&str, &str)]) -> String {
         let mut rv = String::new();
         for sec in self.sections.iter() {
-            sec.get_section(content, meta, &mut rv);
+            sec.get_section(meta, extra, &mut rv);
         }
         rv
     }

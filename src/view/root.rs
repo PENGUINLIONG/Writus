@@ -44,28 +44,38 @@ impl RootView {
         self.entries_per_request = epr;
     }
 
-    fn render_digest(&self, post: &str, meta: &JsonValue) -> String {
-        fn get_digest(full_text: &str) -> String {
-            let mut rv = String::new();
+    fn render_digest(&self, id: &str, post: &str, meta: &JsonValue) -> String {
+        fn get_digest(full_text: &str) -> (String, String) {
             let mut lines = full_text.lines();
-            rv.push_str(lines.next().unwrap_or_default());
-            rv.push_str("\n\n");
-            lines.skip_while(|line| line.trim().len() == 0)
+            let title = lines
+                .next()
+                .map(|x| x.to_owned())
+                .unwrap_or_default();
+            let mut content = String::new();
+            lines
+                .skip_while(|line| line.trim().len() == 0)
                 .take_while(|line| line.trim().len() > 0)
-                .for_each(|line| rv.push_str(line));
-            rv
+                .for_each(|x| content += x);
+            (title, content)
         }
-        let text = get_digest(&post);
-        let mut html = String::with_capacity(text.len());
-        let mut opts = ParserOptions::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        let parser = Parser::new_ext(&text, opts);
-        ::pulldown_cmark::html::push_html(&mut html, parser);
-        self.digest_template.render(&html, meta)
+        fn md_to_html(md: &str) -> String {
+            let mut buf = String::with_capacity(md.len());
+            let mut opts = ParserOptions::empty();
+            opts.insert(OPTION_ENABLE_TABLES);
+            let parser = Parser::new_ext(&md, opts);
+            ::pulldown_cmark::html::push_html(&mut buf, parser);
+            buf
+        }
+        let path = format!("posts/{}", id);
+        let (title, content) = get_digest(&post);
+        self.digest_template.render(meta, &[
+            ("link", &path),
+            ("title", &md_to_html(&title)),
+            ("content", &md_to_html(&content)),
+        ])
     }
     fn render_index(&self, req: &mut Request) -> ApiResult {
         use self::header::ContentType;
-        use serde_json::value::Map;
         #[derive(Deserialize)]
         struct Param {
             /// The current page number.
@@ -76,10 +86,10 @@ impl RootView {
         let guard = self.index.read().unwrap();
         let max_page = {
             let len = guard.len();
-            if len % self.entries_per_request > 0 {
-                len / self.entries_per_request + 1
-            } else {
+            if len % self.entries_per_request == 0 {
                 len / self.entries_per_request
+            } else {
+                len / self.entries_per_request + 1
             }
         };
         let page = param.page.unwrap_or_default()
@@ -97,21 +107,29 @@ impl RootView {
             let metadata_cache = self.metadata_cache.get(&id)?;
             let metadata_guard = metadata_cache.read().unwrap();
             let metadata: &JsonValue = &metadata_guard;
-            digests.push_str(&self.render_digest(post, metadata));
+            digests.push_str(&self.render_digest(&id, post, metadata));
         }
-        let mut meta = Map::with_capacity(3);
-        if page - 1 != 0 {
-            let query = format!("?page={}", page - 1);
-            meta.insert("prev".to_string(), JsonValue::String(query));
-        }
-        if page + 1 != max_page {
-            let query = format!("?page={}", page + 1);
-            meta.insert("next".to_string(), JsonValue::String(query));
-        }
-        let meta = JsonValue::Object(meta);
+        let current = page.to_string();
+        let (prev, prev_link) = if page - 1 > 0 {
+            ((page - 1).to_string(), format!("?page={}", page - 1))
+        } else {
+            (String::new(), String::new())
+        };
+        let (next, next_link) = if page + 1 <= max_page {
+            ((page + 1).to_string(), format!("?page={}", page + 1))
+        } else {
+            (String::new(), String::new())
+        };
         let res = Response::new()
             .with_header(ContentType("text/html; charset=UTF-8".parse().unwrap()))
-            .with_body(self.index_template.render(&digests, &meta));
+            .with_body(self.index_template.render(&JsonValue::Null, &[
+                ("digests", &digests),
+                ("current", &current),
+                ("previous_link", &prev_link),
+                ("previous", &prev),
+                ("next_link", &next_link),
+                ("next", &next),
+            ]));
         Ok(res)
     }
 }

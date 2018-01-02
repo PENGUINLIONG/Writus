@@ -1,4 +1,6 @@
 use serde_json::Value as JsonValue;
+use pulldown_cmark::Parser;
+use pulldown_cmark::{Options as ParserOptions, OPTION_ENABLE_TABLES};
 use writium::prelude::*;
 use writium_cache::{Cache, DumbCacheSource};
 use super::template::*;
@@ -26,17 +28,39 @@ impl PostView {
         self.template = template;
     }
     pub fn render(&self, req: &mut Request) -> ApiResult {
+        fn get_post(full_text: &str) -> (String, String) {
+            let mut lines = full_text.lines();
+            let title = lines
+                .next()
+                .map(|x| x.to_owned())
+                .unwrap_or_default();
+            let mut content = String::new();
+            lines.for_each(|x| content += x);
+            (title, content)
+        }
+        fn md_to_html(md: &str) -> String {
+            let mut buf = String::with_capacity(md.len());
+            let mut opts = ParserOptions::empty();
+            opts.insert(OPTION_ENABLE_TABLES);
+            let parser = Parser::new_ext(&md, opts);
+            ::pulldown_cmark::html::push_html(&mut buf, parser);
+            buf
+        }
         use self::header::ContentType;
         let id = req.path_segs().join("/");
         let post_cache = self.post_cache.get(&id)?;
         let content_guard = post_cache.read().unwrap();
-        let content: &str = content_guard.as_ref();
+        let (title, content) = get_post(content_guard.as_ref());
         let metadata_cache = self.metadata_cache.get(&id)?;
         let metadata_guard = metadata_cache.read().unwrap();
         let metadata: &JsonValue = &metadata_guard;
         let res = Response::new()
             .with_header(ContentType("text/html; charset=UTF-8".parse().unwrap()))
-            .with_body(self.template.render(&content, &metadata));
+            .with_body(self.template.render(&metadata, &[
+                ("link", &id),
+                ("title", &md_to_html(&title)),
+                ("content", &md_to_html(&content)),
+            ]));
         Ok(res)
     }
 }
