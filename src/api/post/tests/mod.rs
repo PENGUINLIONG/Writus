@@ -6,9 +6,6 @@ use auth::SimpleAuthority;
 use api::test_common::*;
 
 static CONTENT_MARKDOWN: &'static str = "# Title\n\nHello, Writus!\n\nBeep!";
-static CONTENT_HTML: &'static str = "<h1>Title</h1>\n<p>Hello, Writus!</p>\n<p>Beep!</p>\n";
-static CONTENT_MARKDOWN_DIGEST: &'static str = "# Title\n\nHello, Writus!";
-static CONTENT_HTML_DIGEST: &'static str = "<h1>Title</h1>\n<p>Hello, Writus!</p>\n";
 
 static CONTENT_DIF: &'static str = "Wow!";
 
@@ -48,38 +45,8 @@ fn test_get_one() {
     let req = Request::new(Method::Get)
         .with_path_segs(&["foo"]);
     let res = test_ok(&api, req);
-    check_type(&res, "text", "html");
-    check_content(&res, CONTENT_HTML);
-}
-#[test]
-fn test_get_one_raw() {
-    let api = api();
-    let req = Request::new(Method::Get)
-        .with_path_segs(&["foo"])
-        .with_query("raw=true");
-    let res = test_ok(&api, req);
     check_type(&res, "text", "markdown");
     check_content(&res, CONTENT_MARKDOWN);
-}
-#[test]
-fn test_get_one_digest() {
-    let api = api();
-    let req = Request::new(Method::Get)
-        .with_path_segs(&["foo"])
-        .with_query("digest=true");
-    let res = test_ok(&api, req);
-    check_type(&res, "text", "html");
-    check_content(&res, CONTENT_HTML_DIGEST);
-}
-#[test]
-fn test_get_one_raw_digest() {
-    let api = api();
-    let req = Request::new(Method::Get)
-        .with_path_segs(&["foo"])
-        .with_query("digest=true&raw=true");
-    let res = test_ok(&api, req);
-    check_type(&res, "text", "markdown");
-    check_content(&res, CONTENT_MARKDOWN_DIGEST);
 }
 #[test]
 fn test_get_index() {
