@@ -30,10 +30,13 @@ impl PostView {
     pub fn render(&self, req: &mut Request) -> ApiResult {
         fn get_post(full_text: &str) -> (String, String) {
             let mut lines = full_text.lines();
-            let title = lines
+            let title: String = lines
                 .next()
-                .map(|x| x.to_owned())
-                .unwrap_or_default();
+                .unwrap_or_default()
+                .chars()
+                .skip_while(|ch| ch == &'#')
+                .skip_while(|ch| ch == &' ')
+                .collect();
             let mut content = String::new();
             lines.for_each(|x| content += x);
             (title, content)
@@ -58,7 +61,7 @@ impl PostView {
             .with_header(ContentType("text/html; charset=UTF-8".parse().unwrap()))
             .with_body(self.template.render(&metadata, &[
                 ("link", &id),
-                ("title", &md_to_html(&title)),
+                ("title", &title),
                 ("content", &md_to_html(&content)),
             ]));
         Ok(res)
