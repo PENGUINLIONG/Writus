@@ -1,19 +1,24 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{BufReader, BufWriter};
 use std::fs::{File, OpenOptions};
 use serde_json as json;
 use writium_cache::CacheSource;
 use writium::prelude::*;
-use super::Comment;
 
 const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
 
-pub struct DefaultSource {
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Comment {
+    pub metadata: HashMap<String, String>,
+    pub content: String,
+}
+pub type Comments = BTreeMap<usize, Comment>;
+pub struct CommentSource {
     dir: String,
 }
-impl DefaultSource {
-    pub fn new(dir: &str) -> DefaultSource {
-        DefaultSource {
+impl CommentSource {
+    pub fn new(dir: &str) -> CommentSource {
+        CommentSource {
             dir: dir.to_string(),
         }
     }
@@ -26,9 +31,9 @@ impl DefaultSource {
             .open(path_buf![&self.dir, id, "comments.json"])
     }
 }
-impl CacheSource for DefaultSource {
-    type Value = BTreeMap<usize, Comment>;
-    fn load(&self, id: &str, create: bool) -> Result<Self::Value> {
+impl CacheSource for CommentSource {
+    type Value = Comments;
+    fn load(&self, id: &str, create: bool) -> Result<Comments> {
         self.open_comment(id, true, false)
             .and_then(|file| {
                 let reader = BufReader::new(file);
@@ -43,7 +48,7 @@ impl CacheSource for DefaultSource {
                 }
             })
     }
-    fn unload(&self, id: &str, obj: &Self::Value) -> Result<()> {
+    fn unload(&self, id: &str, obj: &Comments) -> Result<()> {
         let file = self.open_comment(id, false, true)
             .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
         let writer = BufWriter::new(file);

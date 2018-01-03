@@ -4,12 +4,12 @@ use writium::prelude::*;
 
 const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
 
-pub struct DefaultSource {
+pub struct PostSource {
     dir: String,
 }
-impl DefaultSource {
-    pub fn new(dir: &str) -> DefaultSource {
-        DefaultSource {
+impl PostSource {
+    pub fn new(dir: &str) -> PostSource {
+        PostSource {
             dir: dir.to_string(),
         }
     }
@@ -28,7 +28,7 @@ impl DefaultSource {
             .open(path)
     }
 }
-impl CacheSource for DefaultSource {
+impl CacheSource for PostSource {
     type Value = String;
     fn load(&self, id: &str, create: bool) -> Result<String> {
         use std::io::{Read, BufReader};

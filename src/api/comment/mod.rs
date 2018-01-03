@@ -1,16 +1,14 @@
 ///! Comments API.
 ///! All comments of an article are stored in `comments.json`.
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use writium::prelude::*;
 use writium_auth::Authority;
 use writium_cache::Cache;
+use model::comment::{Comment, Comments};
 
-mod source;
 #[cfg(test)]
 mod tests;
-
-use self::source::DefaultSource;
 
 const DEFAULT_ENTRIES_PER_REQUEST: usize = 5;
 
@@ -18,14 +16,8 @@ const ERR_PRIVILEGE: &'static str = "Requested operation need a matching privile
 const ERR_NOT_FOUND: &'static str = "Cannot find a comment matching the requested index. Maybe it's been deleted already.";
 const ERR_RANGE: &'static str = "The requested range is not valid. A valid range should be one of `from={from}`, `to={to}`, or `from={from}&to={to}` where `{from}` < `{to}`.";
 
-#[derive(Clone, Deserialize, Serialize)]
-pub struct Comment {
-    pub metadata: HashMap<String, String>,
-    pub content: String,
-}
-
 pub struct CommentApi {
-    cache: Cache<BTreeMap<usize, Comment>>,
+    cache: Cache<Comments>,
     auth: Arc<Authority<Privilege=()>>,
     entries_per_request: usize,
 }
@@ -38,10 +30,7 @@ impl CommentApi {
         }
     }
 
-    pub fn set_cache_default(&mut self, published_dir: &str) {
-        self.cache = Cache::new(10, DefaultSource::new(published_dir));
-    }
-    pub fn set_cache(&mut self, cache: Cache<BTreeMap<usize, Comment>>) {
+    pub fn set_cache(&mut self, cache: Cache<Comments>) {
         self.cache = cache;
     }
     pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {
@@ -49,9 +38,6 @@ impl CommentApi {
     }
     pub fn set_entries_per_request(&mut self, entries_per_request: usize) {
         self.entries_per_request = entries_per_request;
-    }
-    pub fn clone_cache(&self) -> Cache<BTreeMap<usize, Comment>> {
-        self.cache.clone()
     }
 
     /// DELETE `/comments/<path..>?{index}`  

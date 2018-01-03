@@ -4,6 +4,10 @@ use auth::SimpleAuthority;
 use toml::Value as TomlValue;
 use writium::hyper::mime::Mime;
 use writium::prelude::*;
+use writium_cache::Cache;
+use api::*;
+use model::*;
+use view::*;
 
 #[derive(Deserialize)]
 struct RawExtra {
@@ -27,26 +31,24 @@ pub struct Extra {
 impl From<Extra> for Namespace {
     /// Construct a Namespace containing all the v1 api and views.
     fn from(extra: Extra) -> Namespace {
-        use api::*;
-        use view::*;
-
         let index = Index::new(&extra.index_key, &extra.index_key_type, Some(&extra.published_dir));
+        let post_cache = Cache::new(10, PostSource::new(&extra.published_dir));
+        let metadata_cache = Cache::new(10, MetadataSource::new(&extra.published_dir));
+        let comment_cache = Cache::new(10, CommentSource::new(&extra.published_dir));
 
         let mut post_api = PostApi::new();
         post_api.set_auth(extra.auth.clone());
-        post_api.set_cache_default(&extra.published_dir);
+        post_api.set_cache(post_cache.clone());
         post_api.set_index(index.clone());
-        let post_cache = post_api.clone_cache();
 
         let mut comment_api = CommentApi::new();
         comment_api.set_auth(extra.auth.clone());
-        comment_api.set_cache_default(&extra.published_dir);
+        comment_api.set_cache(comment_cache.clone());
 
         let mut metadata_api = MetadataApi::new();
         metadata_api.set_auth(extra.auth.clone());
-        metadata_api.set_cache_default(&extra.published_dir);
+        metadata_api.set_cache(metadata_cache.clone());
         metadata_api.set_index(index.clone());
-        let metadata_cache = metadata_api.clone_cache();
 
         let mut resource_api = ResourceApi::new();
         resource_api.set_auth(extra.auth.clone());

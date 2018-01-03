@@ -6,11 +6,8 @@ use writium_auth::{Authority, DumbAuthority};
 use writium_cache::{Cache, DumbCacheSource};
 use super::Index;
 
-mod source;
 #[cfg(test)]
 mod tests;
-
-use self::source::DefaultSource;
 
 const ERR_MISSING_CONTENT_TYPE: &'static str = "Content type should be denoted for verification use.";
 const ERR_JSON: &'static str = "Invalid JSON.";
@@ -28,9 +25,6 @@ impl MetadataApi {
             index: Index::default(),
         }
     }
-    pub fn set_cache_default(&mut self, published_dir: &str) {
-        self.cache = Cache::new(10, DefaultSource::new(published_dir));
-    }
     pub fn set_cache(&mut self, cache: Cache<JsonValue>) {
         self.cache = cache;
     }
@@ -39,9 +33,6 @@ impl MetadataApi {
     }
     pub fn set_index(&mut self, index: Index) {
         self.index = index;
-    }
-    pub fn clone_cache(&self) -> Cache<JsonValue> {
-        self.cache.clone()
     }
 
     fn patch_cache<F>(&self, req: &mut Request, id: &str, f: F) -> ApiResult

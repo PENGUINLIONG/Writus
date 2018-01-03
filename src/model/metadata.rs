@@ -4,12 +4,12 @@ use writium::prelude::*;
 use writium_cache::CacheSource;
 use serde_json::Value as JsonValue;
 
-pub struct DefaultSource {
+pub struct MetadataSource {
     dir: String,
 }
-impl DefaultSource {
-    pub fn new(dir: &str) -> DefaultSource {
-        DefaultSource {
+impl MetadataSource {
+    pub fn new(dir: &str) -> MetadataSource {
+        MetadataSource {
             dir: dir.to_string(),
         }
     }
@@ -22,7 +22,7 @@ impl DefaultSource {
             .open(path_buf![&self.dir, id, "metadata.json"])
     }
 }
-impl CacheSource for DefaultSource {
+impl CacheSource for MetadataSource {
     type Value = JsonValue;
     fn load(&self, id:&str, create: bool) -> Result<Self::Value> {
         fn _load(file: ::std::io::Result<File>) -> Option<JsonValue> {

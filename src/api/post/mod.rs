@@ -9,11 +9,8 @@ const ERR_MIME: &'static str = "Only data of type 'text/markdown' is accepted.";
 
 const DEFAULT_ENTRIES_PER_REQUEST: u64 = 5;
 
-mod source;
 #[cfg(test)]
 mod tests;
-
-use self::source::DefaultSource;
 
 pub struct PostApi {
     auth: Arc<Authority<Privilege=()>>,
@@ -31,9 +28,6 @@ impl PostApi {
             entries_per_request: DEFAULT_ENTRIES_PER_REQUEST,
         }
     }
-    pub fn set_cache_default(&mut self, dir: &str) {
-        self.cache = Cache::new(10, DefaultSource::new(dir));
-    } 
     pub fn set_cache(&mut self, cache: Cache<String>) {
         self.cache = cache;
     }
@@ -45,9 +39,6 @@ impl PostApi {
     }
     pub fn set_index(&mut self, index: Index) {
         self.index = index;
-    }
-    pub fn clone_cache(&self) -> Cache<String> {
-        self.cache.clone()
     }
 
     fn get_content(&self, req: &mut Request) -> ApiResult {
