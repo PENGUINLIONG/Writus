@@ -49,8 +49,11 @@ impl RootView {
             let mut lines = full_text.lines();
             let title = lines
                 .next()
-                .map(|x| x.to_owned())
-                .unwrap_or_default();
+                .unwrap_or_default()
+                .chars()
+                .skip_while(|ch| ch == &'#')
+                .skip_while(|ch| ch == &' ')
+                .collect();
             let mut content = String::new();
             lines
                 .skip_while(|line| line.trim().len() == 0)
@@ -70,7 +73,7 @@ impl RootView {
         let (title, content) = get_digest(&post);
         self.digest_template.render(meta, &[
             ("link", &path),
-            ("title", &md_to_html(&title)),
+            ("title", &title),
             ("content", &md_to_html(&content)),
         ])
     }
