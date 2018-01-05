@@ -154,7 +154,7 @@ impl Api for RootView {
                         loc.push_str(seg);
                     }
                     let res = Response::new()
-                        .with_status(StatusCode::Found)
+                        .with_status(StatusCode::MovedPermanently)
                         .with_header(Location::new(loc));
                     Ok(res)
                 }
