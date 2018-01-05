@@ -34,6 +34,7 @@ extern crate env_logger;
 
 mod auth;
 mod config;
+mod model;
 pub mod api;
 pub mod view;
 pub mod service;
