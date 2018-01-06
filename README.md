@@ -1,7 +1,8 @@
 # Writus
 
 [![crates.io](http://meritbadge.herokuapp.com/writus)](https://crates.io/crates/writus)
-[![Released API docs](https://docs.rs/writus/badge.svg)](http://docs.rs/writus)
+
+[Documentation](https://github.com/PENGUINLIONG/Writus/wiki/API-Docs) | [Configuration](https://github.com/PENGUINLIONG/Writus/wiki/Configure-Writus)
 
 Static blog generator based on Writium Framework.
 
@@ -21,14 +22,8 @@ writus
 writus Writus.toml
 ```
 
-## Configure
-
-This section will be finished soon.
+For more information about starting Writus, please refer to [this wiki page](https://github.com/PENGUINLIONG/Writus/wiki/Get-Writus-Online).
 
 ## Customize
 
-Writus has to be customized. It itself only provide interfaces that blog sites commonly have; and no finished HTML pages will be returned, that is, you have to write your own front-end. A example front-end project will be released soon.
-
-### API Details
-
-This section will be finished soon.
+Writus can be customized with page templates, see [this wiki page](https://github.com/PENGUINLIONG/Writus/wiki/Templates) for more information. A example front-end project will be released soon.
