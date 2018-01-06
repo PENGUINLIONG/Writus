@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 pub mod v1;
 
-const DEFAULT_CONFIG_FILE: &str = "Writium.toml";
+const DEFAULT_CONFIG_FILE: &str = "Writus.toml";
 
 #[derive(Deserialize)]
 pub struct TlsConfig {
