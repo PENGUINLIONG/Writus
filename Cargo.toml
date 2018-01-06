@@ -1,6 +1,6 @@
 [package]
 name = "writus"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["PENGUINLIONG <admin@penguinliong.moe>"]
 repository = "https://github.com/PENGUINLIONG/Writus"
 description = "File-based blog based on Writium Framework."
