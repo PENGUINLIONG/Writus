@@ -38,7 +38,7 @@ impl Index {
         let col: Box<IndexCollection> = match ty {
             "string" => Box::new(DefaultIndexCollection::<String>::new(true)),
             "integer" => Box::new(DefaultIndexCollection::<i64>::new(true)),
-            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new(true)),
+            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new(false)),
             _ => panic!("Index key type should be one of `datetime`, `string`, or `integer`."),
         };
         mk_idx(key, col, dir)
