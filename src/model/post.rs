@@ -24,6 +24,7 @@ impl PostSource {
         OpenOptions::new()
             .read(read)
             .write(!read)
+            .truncate(!read)
             .create(!read)
             .open(path)
     }

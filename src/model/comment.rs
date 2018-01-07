@@ -28,6 +28,7 @@ impl CommentSource {
             .create(create)
             .read(read)
             .write(!read)
+            .truncate(!read)
             .open(path_buf![&self.dir, id, "comments.json"])
     }
 }

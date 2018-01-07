@@ -19,6 +19,7 @@ impl MetadataSource {
             .create(!read)
             .read(read)
             .write(!read)
+            .truncate(!read)
             .open(path_buf![&self.dir, id, "metadata.json"])
     }
 }
