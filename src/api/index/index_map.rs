@@ -135,3 +135,92 @@ impl IndexCollection for DumbIndexCollection {
     fn remove(&mut self, _path: &str) {}
     fn len(&self) -> usize { 0 }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{DateTime, DefaultIndexCollection, IndexCollection};
+    #[test]
+    fn test_default_index_col_num() {
+        let mut col = DefaultIndexCollection::<i64>::new(true);
+        col.insert("4", &json!(4));
+        col.insert("3", &json!(3));
+        col.insert("2", &json!(2));
+        col.insert("1", &json!(1));
+        col.insert("0", &json!(0));
+        assert_eq!(col.get_range(0, 5), &["0", "1", "2", "3", "4"]);
+    }
+    #[test]
+    fn test_default_index_col_str() {
+        let mut col = DefaultIndexCollection::<String>::new(true);
+        col.insert("4", &json!("4"));
+        col.insert("3", &json!("3"));
+        col.insert("2", &json!("2"));
+        col.insert("1", &json!("1"));
+        col.insert("0", &json!("0"));
+        assert_eq!(col.get_range(0, 5), &["0", "1", "2", "3", "4"]);
+    }
+    #[test]
+    fn test_default_index_col_dt() {
+        let mut col = DefaultIndexCollection::<DateTime>::new(true);
+        col.insert("4", &json!("2018-01-01T00:00:04+00:00"));
+        col.insert("3", &json!("2018-01-01T00:00:03+00:00"));
+        col.insert("2", &json!("2018-01-01T00:00:02+00:00"));
+        col.insert("1", &json!("2018-01-01T00:00:01+00:00"));
+        col.insert("0", &json!("2018-01-01T00:00:00+00:00"));
+        assert_eq!(col.get_range(0, 5), &["0", "1", "2", "3", "4"]);
+    }
+    #[test]
+    fn test_default_index_col_range() {
+        let mut col = DefaultIndexCollection::<i64>::new(true);
+        col.insert("4", &json!(4));
+        col.insert("3", &json!(3));
+        col.insert("2", &json!(2));
+        col.insert("1", &json!(1));
+        col.insert("0", &json!(0));
+        assert_eq!(col.get_range(1, 3), &["1", "2", "3"]);
+    }
+    #[test]
+    fn test_default_index_col_range_multiple_times() {
+        let mut col = DefaultIndexCollection::<i64>::new(true);
+        col.insert("5", &json!(5));
+        col.insert("4", &json!(4));
+        col.insert("3", &json!(3));
+        col.insert("2", &json!(2));
+        col.insert("1", &json!(1));
+        col.insert("0", &json!(0));
+        assert_eq!(col.get_range(0, 3), &["0", "1", "2"]);
+        assert_eq!(col.get_range(1, 3), &["1", "2", "3"]);
+        assert_eq!(col.get_range(2, 3), &["2", "3", "4"]);
+        assert_eq!(col.get_range(3, 3), &["3", "4", "5"]);
+    }
+    #[test]
+    fn test_default_index_col_num_reverse() {
+        let mut col = DefaultIndexCollection::<i64>::new(false);
+        col.insert("0", &json!(0));
+        col.insert("1", &json!(1));
+        col.insert("2", &json!(2));
+        col.insert("3", &json!(3));
+        col.insert("4", &json!(4));
+        assert_eq!(col.get_range(0, 5), &["4", "3", "2", "1", "0"]);
+    }
+    #[test]
+    fn test_default_index_col_str_reverse() {
+        let mut col = DefaultIndexCollection::<String>::new(false);
+        col.insert("0", &json!("0"));
+        col.insert("1", &json!("1"));
+        col.insert("2", &json!("2"));
+        col.insert("3", &json!("3"));
+        col.insert("4", &json!("4"));
+        assert_eq!(col.get_range(0, 5), &["4", "3", "2", "1", "0"]);
+    }
+    #[test]
+    fn test_default_index_col_dt_reverse() {
+        let mut col = DefaultIndexCollection::<DateTime>::new(false);
+        col.insert("0", &json!("2018-01-01T00:00:00+00:00"));
+        col.insert("1", &json!("2018-01-01T00:00:01+00:00"));
+        col.insert("2", &json!("2018-01-01T00:00:02+00:00"));
+        col.insert("3", &json!("2018-01-01T00:00:03+00:00"));
+        col.insert("4", &json!("2018-01-01T00:00:04+00:00"));
+        assert_eq!(col.get_range(0, 5), &["4", "3", "2", "1", "0"]);
+    }
+}

@@ -38,12 +38,12 @@ impl Index {
         let ascending = if ty.starts_with('+') {
             // Prefixed by '+', the index order is ascending. Larger value will
             // be placed at the back.
-            ty = ty[1..];
+            ty = &ty[1..];
             true
         } else if ty.starts_with('-') {
             // Prefixed by '-', the index order is descending, Larger value will
             // be placed at the front.
-            ty = ty[1..];
+            ty = &ty[1..];
             false
         } else {
             // Prefixed by nothing, the index order is by default ascending.
