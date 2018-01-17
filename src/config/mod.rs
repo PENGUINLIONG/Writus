@@ -1,4 +1,12 @@
 use std::collections::HashMap;
+use std::io::Read;
+use std::env::{args, set_current_dir};
+use std::fs::File;
+use std::path::Path;
+use std::process::exit;
+use getopts::Options;
+use toml::Value as TomlValue;
+use toml::value::Table as TomlTable;
 
 pub mod v1;
 
@@ -25,17 +33,16 @@ pub struct WritusConfig {
     /// * `published_dir` = `./published`
     /// * `template_dir` = `./published/template`
     /// * `digests_per_page` = `5`
-    pub extra: Option<::toml::Value>,
+    pub extra: Option<TomlValue>,
 
     /// Static pages.
     pub static_pages: Option<HashMap<String, String>>,
 }
 impl WritusConfig{
     pub fn load() -> WritusConfig {
-        use std::io::Read;
-        let mut options = ::getopts::Options::new();
+        let mut options = Options::new();
         options.optflag("h", "help", "Help information");
-        let args: Vec<String> = ::std::env::args().collect();
+        let args: Vec<String> = args().collect();
         
         let matches = match options.parse(&args[1..]) {
             Ok(matches) => matches,
@@ -43,19 +50,18 @@ impl WritusConfig{
         };
         if matches.opt_present("h") {
             error!("{}", options.usage(&"Usage: writium CONFIG_FILE [options]"));
-            ::std::process::exit(0);
+            exit(0);
         }
         let path = if matches.free.is_empty() {
             info!("No configuration file given. Using default config file: {}",
                 DEFAULT_CONFIG_FILE);
-            DEFAULT_CONFIG_FILE
+            Path::new(DEFAULT_CONFIG_FILE)
         } else {
-            let p = &matches.free[0];
-            info!("Using config file: {}", p);
-            Path::from(p)
+            info!("Using config file: {}", matches.free[0]);
+            Path::new(&matches.free[0])
         };
         let mut config = String::new();
-        match ::std::fs::File::open(path) {
+        match File::open(path) {
             Ok(mut file) => match file.read_to_string(&mut config) {
                 Ok(content) => content,
                 Err(_) => panic!("Unable to read config file.")
@@ -64,15 +70,14 @@ impl WritusConfig{
         };
         // Once the config file is read successfully, change the current
         // directory to where the config file is.
-        ::std::env::set_current_dir(path.parent().unwrap());
+        set_current_dir(path.parent().unwrap())
+            .expect("Unable to set current directory to config file's parent.");
         match ::toml::from_str::<WritusConfig>(&config) {
             Ok(toml) => toml.insert_default(),
             Err(err) => panic!("Unable to parse Writium config file. {:?}", err),
         }
     }
     fn insert_default(mut self) -> WritusConfig {
-        use ::toml::Value as TomlValue;
-        use ::toml::value::Table as TomlTable;
         if self.host_addr.is_none() { self.host_addr = Some("127.0.0.1".to_string()) }
         if self.port.is_none() { self.port = Some(8080) }
 
