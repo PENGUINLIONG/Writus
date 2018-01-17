@@ -52,7 +52,7 @@ impl WritusConfig{
         } else {
             let p = &matches.free[0];
             info!("Using config file: {}", p);
-            p
+            Path::from(p)
         };
         let mut config = String::new();
         match ::std::fs::File::open(path) {
@@ -62,6 +62,9 @@ impl WritusConfig{
             },
             Err(_) => panic!("Unable to open config file."),
         };
+        // Once the config file is read successfully, change the current
+        // directory to where the config file is.
+        ::std::env::set_current_dir(path.parent().unwrap());
         match ::toml::from_str::<WritusConfig>(&config) {
             Ok(toml) => toml.insert_default(),
             Err(err) => panic!("Unable to parse Writium config file. {:?}", err),
