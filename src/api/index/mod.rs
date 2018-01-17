@@ -34,11 +34,25 @@ impl Index {
     /// Make a new `Index` with given index key and corresponding default index
     /// collection. If `dir` has a value, index will be generated from local
     /// storage, searching for articles in that directory and its subdirectory.
-    pub fn new(key: &str, ty: &str, dir: Option<&str>) -> Index {
+    pub fn new(key: &str, mut ty: &str, dir: Option<&str>) -> Index {
+        let ascending = if ty.starts_with('+') {
+            // Prefixed by '+', the index order is ascending. Larger value will
+            // be placed at the back.
+            ty = ty[1..];
+            true
+        } else if ty.starts_with('-') {
+            // Prefixed by '-', the index order is descending, Larger value will
+            // be placed at the front.
+            ty = ty[1..];
+            false
+        } else {
+            // Prefixed by nothing, the index order is by default ascending.
+            true
+        };
         let col: Box<IndexCollection> = match ty {
-            "string" => Box::new(DefaultIndexCollection::<String>::new(true)),
-            "integer" => Box::new(DefaultIndexCollection::<i64>::new(true)),
-            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new(false)),
+            "string" => Box::new(DefaultIndexCollection::<String>::new(ascending)),
+            "integer" => Box::new(DefaultIndexCollection::<i64>::new(ascending)),
+            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new(ascending)),
             _ => panic!("Index key type should be one of `datetime`, `string`, or `integer`."),
         };
         mk_idx(key, col, dir)
