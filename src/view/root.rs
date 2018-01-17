@@ -96,8 +96,8 @@ impl RootView {
             }
         };
         let page = param.page.unwrap_or_default()
-            .max(1)
-            .min(max_page);
+            .min(max_page)
+            .max(1);
         let skip = (page - 1) * self.entries_per_request;
         let take = self.entries_per_request;
 
