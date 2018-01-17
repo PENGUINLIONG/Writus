@@ -105,7 +105,7 @@ fn raw_to_extra(extra: RawExtra) -> Extra {
             Arc::new(SimpleAuthority::default())
         },
         index_key: extra.index_key.unwrap_or("published".to_string()),
-        index_key_type: extra.index_key_type.unwrap_or("datetime".to_string()),
+        index_key_type: extra.index_key_type.unwrap_or("-datetime".to_string()),
         entries_per_request: extra.entries_per_request.unwrap_or(5),
         allowed_exts: extra.allowed_exts.unwrap_or_default()
             .into_iter()
