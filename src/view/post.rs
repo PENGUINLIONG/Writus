@@ -39,7 +39,10 @@ impl PostView {
                 .skip_while(|ch| ch == &' ')
                 .collect();
             let mut content = String::new();
-            lines.for_each(|x| content += x);
+            lines.for_each(|x| {
+                content += "\n";
+                content += x;
+            });
             (title, content)
         }
         fn md_to_html(md: &str) -> String {
