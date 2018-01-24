@@ -32,9 +32,9 @@ impl From<Extra> for Namespace {
     /// Construct a Namespace containing all the v1 api and views.
     fn from(extra: Extra) -> Namespace {
         let index = Index::new(&extra.index_key, &extra.index_key_type, Some(&extra.published_dir));
-        let post_cache = Cache::new(10, PostSource::new(&extra.published_dir));
-        let metadata_cache = Cache::new(10, MetadataSource::new(&extra.published_dir));
-        let comment_cache = Cache::new(10, CommentSource::new(&extra.published_dir));
+        let post_cache = Arc::new(Cache::new(10, PostSource::new(&extra.published_dir)));
+        let metadata_cache = Arc::new(Cache::new(10, MetadataSource::new(&extra.published_dir)));
+        let comment_cache = Arc::new(Cache::new(10, CommentSource::new(&extra.published_dir)));
 
         let mut post_api = PostApi::new();
         post_api.set_auth(extra.auth.clone());

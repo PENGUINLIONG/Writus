@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use writium::prelude::*;
-use writium_auth::Authority;
-use writium_cache::Cache;
+use writium_auth::{Authority, DumbAuthority};
+use writium_cache::{Cache, DumbCacheSource};
 use model::comment::{Comment, Comments};
 
 #[cfg(test)]
@@ -17,20 +17,20 @@ const ERR_NOT_FOUND: &'static str = "Cannot find a comment matching the requeste
 const ERR_RANGE: &'static str = "The requested range is not valid. A valid range should be one of `from={from}`, `to={to}`, or `from={from}&to={to}` where `{from}` < `{to}`.";
 
 pub struct CommentApi {
-    cache: Cache<Comments>,
+    cache: Arc<Cache<Comments>>,
     auth: Arc<Authority<Privilege=()>>,
     entries_per_request: usize,
 }
 impl CommentApi {
     pub fn new() -> CommentApi {
         CommentApi {
-            cache: Cache::new(0, ::writium_cache::DumbCacheSource::new()),
-            auth: Arc::new(::writium_auth::DumbAuthority::new()),
+            cache: Arc::new(Cache::new(0, DumbCacheSource::new())),
+            auth: Arc::new(DumbAuthority::new()),
             entries_per_request: DEFAULT_ENTRIES_PER_REQUEST,
         }
     }
 
-    pub fn set_cache(&mut self, cache: Cache<Comments>) {
+    pub fn set_cache(&mut self, cache: Arc<Cache<Comments>>) {
         self.cache = cache;
     }
     pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {

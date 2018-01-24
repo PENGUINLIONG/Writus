@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use hyper::header::ContentType;
 use writium::prelude::*;
-use writium_auth::Authority;
-use writium_cache::Cache;
+use writium_auth::{Authority, DumbAuthority};
+use writium_cache::{Cache, DumbCacheSource};
 use super::index::Index;
 
 const ERR_MIME: &'static str = "Only data of type 'text/markdown' is accepted.";
@@ -14,7 +14,7 @@ mod tests;
 
 pub struct PostApi {
     auth: Arc<Authority<Privilege=()>>,
-    cache: Cache<String>,
+    cache: Arc<Cache<String>>,
     index: Index,
     entries_per_request: u64,
 }
@@ -22,13 +22,13 @@ pub struct PostApi {
 impl PostApi {
     pub fn new() -> PostApi {
         PostApi {
-            auth: Arc::new(::writium_auth::DumbAuthority::new()),
-            cache: Cache::new(0, ::writium_cache::DumbCacheSource::new()),
+            auth: Arc::new(DumbAuthority::new()),
+            cache: Arc::new(Cache::new(0, DumbCacheSource::new())),
             index: Index::default(),
             entries_per_request: DEFAULT_ENTRIES_PER_REQUEST,
         }
     }
-    pub fn set_cache(&mut self, cache: Cache<String>) {
+    pub fn set_cache(&mut self, cache: Arc<Cache<String>>) {
         self.cache = cache;
     }
     pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {

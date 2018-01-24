@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use serde_json::Value as JsonValue;
 use pulldown_cmark::Parser;
 use pulldown_cmark::{Options as ParserOptions, OPTION_ENABLE_TABLES};
@@ -9,8 +10,8 @@ use super::template::*;
 pub struct RootView {
     index_template: Template,
     digest_template: Template,
-    post_cache: Cache<String>,
-    metadata_cache: Cache<JsonValue>,
+    post_cache: Arc<Cache<String>>,
+    metadata_cache: Arc<Cache<JsonValue>>,
     index: Index,
     entries_per_request: usize,
 }
@@ -19,16 +20,16 @@ impl RootView {
         RootView {
             index_template: Template::default(),
             digest_template: Template::default(),
-            post_cache: Cache::new(0, DumbCacheSource::new()),
-            metadata_cache: Cache::new(0, DumbCacheSource::new()),
+            post_cache: Arc::new(Cache::new(0, DumbCacheSource::new())),
+            metadata_cache: Arc::new(Cache::new(0, DumbCacheSource::new())),
             index: Index::default(),
             entries_per_request: 5,
         }
     }
-    pub fn set_post_cache(&mut self, cache: Cache<String>) {
+    pub fn set_post_cache(&mut self, cache: Arc<Cache<String>>) {
         self.post_cache = cache;
     }
-    pub fn set_metadata_cache(&mut self, cache: Cache<JsonValue>) {
+    pub fn set_metadata_cache(&mut self, cache: Arc<Cache<JsonValue>>) {
         self.metadata_cache = cache;
     }
     pub fn set_digest_template(&mut self, template: Template) {

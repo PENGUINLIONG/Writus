@@ -13,19 +13,19 @@ const ERR_MISSING_CONTENT_TYPE: &'static str = "Content type should be denoted f
 const ERR_JSON: &'static str = "Invalid JSON.";
 
 pub struct MetadataApi {
-    cache: Cache<JsonValue>,
+    cache: Arc<Cache<JsonValue>>,
     auth: Arc<Authority<Privilege=()>>,
     index: Index,
 }
 impl MetadataApi {
     pub fn new() -> MetadataApi {
         MetadataApi {
-            cache: Cache::new(0, DumbCacheSource::new()),
+            cache: Arc::new(Cache::new(0, DumbCacheSource::new())),
             auth: Arc::new(DumbAuthority::new()),
             index: Index::default(),
         }
     }
-    pub fn set_cache(&mut self, cache: Cache<JsonValue>) {
+    pub fn set_cache(&mut self, cache: Arc<Cache<JsonValue>>) {
         self.cache = cache;
     }
     pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {
