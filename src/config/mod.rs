@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
 use std::env::{args, set_current_dir};
-use std::fs::File;
+use std::fs::{canonicalize, File};
 use std::path::Path;
 use std::process::exit;
 use getopts::Options;
@@ -70,6 +70,7 @@ impl WritusConfig{
         };
         // Once the config file is read successfully, change the current
         // directory to where the config file is.
+        let path = canonicalize(path).unwrap();
         set_current_dir(path.parent().unwrap())
             .expect("Unable to set current directory to config file's parent.");
         match ::toml::from_str::<WritusConfig>(&config) {
