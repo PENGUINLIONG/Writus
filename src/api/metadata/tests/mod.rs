@@ -19,7 +19,7 @@ const NULL_NEKO: &'static str = r#"{"neko":null}"#;
 
 fn api() -> MetadataApi {
     let mut api = MetadataApi::new();
-    api.set_cache(Cache::new(2, MockSource::new()));
+    api.set_cache(Arc::new(Cache::new(2, MockSource::new())));
     api.set_auth(Arc::new(SimpleAuthority::new("PASSWORD")));
     let index = Index::new("key", "string", None);
     api.set_index(index);
@@ -144,7 +144,7 @@ fn fail_delete_some() {
 
 fn api_with_many_articles() -> (MetadataApi, Index) {
     let mut api = MetadataApi::new();
-    api.set_cache(Cache::new(2, MockSource::new()));
+    api.set_cache(Arc::new(Cache::new(2, MockSource::new())));
     api.set_auth(Arc::new(SimpleAuthority::new("PASSWORD")));
     let index = Index::new("key", "string", None);
     {

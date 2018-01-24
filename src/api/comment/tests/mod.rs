@@ -19,19 +19,19 @@ const POST_JSON: &'static str = r#"{"0":{"metadata":{"author":"PENGUINLIONG"},"c
 
 fn api() -> CommentApi {
     let mut api = CommentApi::new();
-    api.set_cache(Cache::new(3, MockSource::new()));
+    api.set_cache(Arc::new(Cache::new(3, MockSource::new())));
     api.set_auth(Arc::new(SimpleAuthority::new("PASSWORD")));
     api
 }
 fn api_privilege() -> CommentApi {
     let mut api = CommentApi::new();
-    api.set_cache(Cache::new(3, MockSource::new_privilege()));
+    api.set_cache(Arc::new(Cache::new(3, MockSource::new_privilege())));
     api.set_auth(Arc::new(SimpleAuthority::new("PASSWORD")));
     api
 }
 fn api_with_many_comments() -> CommentApi {
     let mut api = CommentApi::new();
-    api.set_cache(Cache::new(3, MockSource::many_comments()));
+    api.set_cache(Arc::new(Cache::new(3, MockSource::many_comments())));
     api.set_auth(Arc::new(SimpleAuthority::new("PASSWORD")));
     api.set_entries_per_request(2);
     api

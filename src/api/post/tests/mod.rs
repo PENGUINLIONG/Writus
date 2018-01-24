@@ -15,7 +15,7 @@ fn api() -> PostApi {
     use writium_cache::Cache;
     let mut post = PostApi::new();
     post.set_auth(Arc::new(SimpleAuthority::new("PASSWORD")));
-    post.set_cache(Cache::new(3, source::MockSource::new()));
+    post.set_cache(Arc::new(Cache::new(3, source::MockSource::new())));
     post
 }
 fn indexed_api() -> PostApi {
