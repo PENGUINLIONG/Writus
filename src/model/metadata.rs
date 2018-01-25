@@ -15,6 +15,10 @@ impl MetadataSource {
     }
     fn open_metadata(&self, id: &str, read: bool) -> ::std::io::Result<File> {
         info!("Try openning file of ID: {}", id);
+        let pos_non_slash = id.bytes()
+            .position(|x| x != b'/')
+            .unwrap_or(0);
+        let id = &id[..pos_non_slash];
         OpenOptions::new()
             .create(!read)
             .read(read)

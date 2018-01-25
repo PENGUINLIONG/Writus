@@ -16,6 +16,10 @@ impl PostSource {
     fn open_content(&self, id: &str, read: bool) -> ::std::io::Result<File> {
         use std::fs::create_dir_all;
         info!("Try openning file of ID: {}", id);
+        let pos_non_slash = id.bytes()
+            .position(|x| x != b'/')
+            .unwrap_or(0);
+        let id = &id[..pos_non_slash];
         let mut path = path_buf![&self.dir, id];
         if !read && !path.exists() {
             create_dir_all(&path)?;

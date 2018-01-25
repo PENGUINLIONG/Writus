@@ -24,6 +24,10 @@ impl CommentSource {
     }
     fn open_comment(&self, id: &str, read: bool, create: bool) -> ::std::io::Result<File> {
         info!("Try openning file of ID: {}", id);
+        let pos_non_slash = id.bytes()
+            .position(|x| x != b'/')
+            .unwrap_or(0);
+        let id = &id[..pos_non_slash];
         OpenOptions::new()
             .create(create)
             .read(read)
