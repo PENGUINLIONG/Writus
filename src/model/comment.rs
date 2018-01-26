@@ -1,11 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
-use std::io::{BufReader, BufWriter};
-use std::fs::{File, OpenOptions};
-use serde_json as json;
-use writium_cache::CacheSource;
 use writium::prelude::*;
+use writium_cache::CacheSource;
+use super::FileAccessor;
 
-const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
+const ERR_IO: &str = "Resource accessed but error occured during IO.";
+const ERR_BROKEN_JSON: &str = "Local JSON file is broken. Try replacing the invalid data before other operations.";
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Comment {
@@ -14,50 +13,38 @@ pub struct Comment {
 }
 pub type Comments = BTreeMap<usize, Comment>;
 pub struct CommentSource {
-    dir: String,
+    accessor: FileAccessor,
 }
 impl CommentSource {
     pub fn new(dir: &str) -> CommentSource {
         CommentSource {
-            dir: dir.to_string(),
+            accessor: FileAccessor::with_fixed_file_name(dir, "comments.json"),
         }
-    }
-    fn open_comment(&self, id: &str, read: bool, create: bool) -> ::std::io::Result<File> {
-        info!("Try openning file of ID: {}", id);
-        let pos_non_slash = id.bytes()
-            .position(|x| x != b'/')
-            .unwrap_or(0);
-        let id = &id[..pos_non_slash];
-        OpenOptions::new()
-            .create(create)
-            .read(read)
-            .write(!read)
-            .truncate(!read)
-            .open(path_buf![&self.dir, id, "comments.json"])
     }
 }
 impl CacheSource for CommentSource {
     type Value = Comments;
     fn load(&self, id: &str, create: bool) -> Result<Comments> {
-        self.open_comment(id, true, false)
-            .and_then(|file| {
-                let reader = BufReader::new(file);
-                let json: Self::Value = json::from_reader(reader)?;
-                Ok(json)
-            })
-            .or_else(|_err| {
-                if create {
-                    Ok(BTreeMap::new())
-                } else {
-                    Err(Error::internal(ERR_ACCESS))
-                }
-            })
+        use std::io::Read;
+        let mut reader = self.accessor.read(id)?;
+        let mut json_vec = Vec::new();
+        reader.read_to_end(&mut json_vec)
+            .map_err(|err| Error::internal(ERR_BROKEN_JSON).with_cause(err))?;
+        match ::serde_json::from_slice(&json_vec) {
+            Ok(json) => Ok(json),
+            Err(err) => if create {
+                Ok(Comments::new())
+            } else {
+                Err(Error::internal(ERR_IO).with_cause(err))
+            },
+        }
     }
     fn unload(&self, id: &str, obj: &Comments) -> Result<()> {
-        let file = self.open_comment(id, false, true)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
-        let writer = BufWriter::new(file);
-        json::to_writer_pretty(writer, obj)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))
+        let writer = self.accessor.write(id)?;
+        ::serde_json::to_writer_pretty(writer, obj)
+            .map_err(|err| Error::internal(ERR_IO).with_cause(err))
+    }
+    fn remove(&self, id: &str) -> Result<()> {
+        self.accessor.remove(id)
     }
 }

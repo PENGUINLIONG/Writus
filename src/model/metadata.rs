@@ -1,81 +1,52 @@
-use std::io::{Read, Write, BufReader, BufWriter};
-use std::fs::{File, OpenOptions};
 use writium::prelude::*;
 use writium_cache::CacheSource;
 use serde_json::Value as JsonValue;
+use super::FileAccessor;
+
+const ERR_IO: &str = "Resource accessed but error occured during IO.";
+const ERR_BROKEN_JSON: &str = "Local JSON file is broken. Try replacing the invalid data before other operations.";
 
 pub struct MetadataSource {
-    dir: String,
+    accessor: FileAccessor,
 }
 impl MetadataSource {
     pub fn new(dir: &str) -> MetadataSource {
         MetadataSource {
-            dir: dir.to_string(),
+            accessor: FileAccessor::with_fixed_file_name(dir, "metadata.json"),
         }
-    }
-    fn open_metadata(&self, id: &str, read: bool) -> ::std::io::Result<File> {
-        info!("Try openning file of ID: {}", id);
-        let pos_non_slash = id.bytes()
-            .position(|x| x != b'/')
-            .unwrap_or(0);
-        let id = &id[..pos_non_slash];
-        OpenOptions::new()
-            .create(!read)
-            .read(read)
-            .write(!read)
-            .truncate(!read)
-            .open(path_buf![&self.dir, id, "metadata.json"])
     }
 }
 impl CacheSource for MetadataSource {
     type Value = JsonValue;
     fn load(&self, id:&str, create: bool) -> Result<Self::Value> {
-        fn _load(file: ::std::io::Result<File>) -> Option<JsonValue> {
-            let file = file.ok()?;
-            let mut text = Vec::new();
-            BufReader::new(file).read_to_end(&mut text).ok()?;
-            let json = ::serde_json::from_slice(&text);
-            if json.is_err() {
-                println!("{}", json.unwrap_err());
-                return None
-            }
-            let json = json.ok()?;
-            Some(json)
-        }
-        if let Some(json) = _load(self.open_metadata(id, true)) {
-            if json.is_object() {
-               Ok(json)
-            } else if create {
-                warn!("Metadata in '{}' should be an object but create flag was set. A new value will replace the invalid data.", id);
-               Ok(::serde_json::from_str("{}").unwrap())
+        use std::io::Read;
+        let mut reader = self.accessor.read(id)?;
+        let mut json_vec = Vec::new();
+        reader.read_to_end(&mut json_vec)
+            .map_err(|err| Error::internal(ERR_IO).with_cause(err))?;
+        match ::serde_json::from_slice::<JsonValue>(&json_vec) {
+            Ok(json) => if json.is_object() {
+                Ok(json)
+            } else if create{
+                warn!("JSON in '{}' is valid but is not an object. `create` flag is on, so a new value will replace the invalid data.", id);
+                Ok(json!({}))
             } else {
-               Err(Error::internal("Metadata should be an object."))
-            }
-        } else {
-            if create {
-               Ok(::serde_json::from_str("{}").unwrap())
+                Err(Error::internal(ERR_BROKEN_JSON))
+            },
+            Err(err) => if create {
+                warn!("JSON in '{}' is broken and `create` flag is on. A new value will replace the invalid data.", id);
+                Ok(json!({}))
             } else {
-               Err(Error::internal("Unable to load metadata."))
-            }
+                Err(Error::internal(ERR_BROKEN_JSON).with_cause(err))
+            },
         }
     }
     fn unload(&self, id: &str, val: &Self::Value) -> Result<()> {
-        if let Err(_) = self.open_metadata(id, false)
-            .and_then(|file| {
-                let json = ::serde_json::to_string_pretty(&val).unwrap();
-                BufWriter::new(file).write_all(json.as_bytes())
-            }) {
-           Err(Error::internal("Unable to write to metadata file. New data is not written."))
-        } else {
-           Ok(())
-        }
+        let writer = self.accessor.write(id)?;
+        ::serde_json::to_writer_pretty(writer, val)
+            .map_err(|err| Error::internal(ERR_IO).with_cause(err))
     }
     fn remove(&self, id: &str) -> Result<()> {
-        use std::fs::remove_file;
-        if let Err(_) = remove_file(path_buf![&self.dir, id, "metadata.json"]) {
-           Err(Error::internal("Unable to remove metadata file."))
-        } else {
-           Ok(())
-        }
+        self.accessor.remove(id)
     }
 }
