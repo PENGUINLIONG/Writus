@@ -116,9 +116,7 @@ impl CommentApi {
     fn delete_all(&self, req: &mut Request) -> ApiResult {
         self.auth.authorize((), req)?;
         let id = req.path_segs().join("/");
-        let lock = self.cache.get(&id)?;
-        let mut cache = lock.write().unwrap();
-        cache.clear();
+        self.cache.remove(&id)?;
         Ok(Response::new())
     }
 

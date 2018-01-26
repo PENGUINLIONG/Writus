@@ -183,9 +183,8 @@ fn test_delete_all() {
     // The comment should be removed.
     let req = Request::new(Method::Get)
         .with_path_segs(&["foo"]);
-    let res = test_ok(&api, req);
-    check_type(&res, "application", "json");
-    check_content(&res, "{}");
+    let err = test_err(&api, req);
+    assert_eq!(err.status(), StatusCode::NotFound);
 }
 
 #[test]
