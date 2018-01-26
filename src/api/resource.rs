@@ -1,19 +1,18 @@
-use std::fs::File;
-use std::io::{Read, Write};
 use std::collections::HashMap;
 use std::sync::Arc;
 use writium::prelude::*;
 use self::header::ContentType;
 use writium::hyper::mime::Mime;
 use writium_auth::{Authority, DumbAuthority};
+use writium_cache::{Cache, DumbCacheSource};
 
 const ERR_MISSING_CONTENT_TYPE: &'static str = "Content type should be denoted for verification use.";
 const ERR_MIME_NOT_FOUND: &'static str = "No corresponding MIME matches the inquired file type (extension). Maybe the file type is intentionally prevented from being transferred.";
 const ERR_MIME_EXT_MISMATCH: &'static str = "Path extension doesn't accord with content type denoted.";
-const ERR_ACCESS: &'static str = "Cannot access to requested resource.";
 
 pub struct ResourceApi {
     auth: Arc<Authority<Privilege=()>>,
+    cache: Arc<Cache<Vec<u8>>>,
     published_dir: String,
     allowed_exts: HashMap<String, Mime>,
 }
@@ -22,12 +21,16 @@ impl ResourceApi {
     pub fn new() -> ResourceApi {
         ResourceApi {
             auth: Arc::new(DumbAuthority::new()),
+            cache: Arc::new(Cache::new(0, DumbCacheSource::new())),
             published_dir: String::new(),
             allowed_exts: HashMap::new(),
         }
     }
     pub fn set_auth(&mut self, auth: Arc<Authority<Privilege=()>>) {
         self.auth = auth;
+    }
+    pub fn set_cache(&mut self, cache: Arc<Cache<Vec<u8>>>) {
+        self.cache = cache;
     }
     pub fn set_published_dir(&mut self, published_dir: &str) {
         self.published_dir = published_dir.to_owned();
@@ -42,18 +45,12 @@ impl ResourceApi {
         let mime = self.allowed_exts.get(ext)
             .ok_or(Error::new(StatusCode::UnsupportedMediaType, ERR_MIME_NOT_FOUND))?;
 
-        let path = path_buf![&self.published_dir, &id];
-        let mut file = File::open(&path)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
-        let file_len = file.metadata()
-            .map(|meta| meta.len())
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
-        let mut vec = Vec::with_capacity(file_len as usize);
-        file.read_to_end(&mut vec)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
+        let cache = self.cache.get(&id)?;
+        let guard = cache.read().unwrap();
+        let data = (*guard).clone();
         Ok(Response::new()
             .with_header(ContentType(mime.clone()))
-            .with_body(vec))
+            .with_body(data))
     }
 
     fn put(&self, req: &mut Request) -> ApiResult {
@@ -70,22 +67,18 @@ impl ResourceApi {
             return Err(Error::bad_request(ERR_MIME_EXT_MISMATCH))
         }
 
-        let path = path_buf![&self.published_dir, &id];
-        let mut file = File::create(path)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
-        file.write_all(req.body())
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
-        Ok(Response::new())
+        self.cache.get(&id)
+            .or(self.cache.create(&id))
+            .and_then(|cache| Ok(*cache.write().unwrap() = req.body().to_owned()))
+            .map(|_| Response::new())
     }
 
     fn delete(&self, req: &mut Request) -> ApiResult {
         self.auth.authorize((), &req)?;
 
         let id = req.path_segs().join("/");
-        let path = path_buf![&self.published_dir, &id];
-        ::std::fs::remove_file(&path)
+        self.cache.remove(&id)
             .map(|_| Response::new())
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))
     }
 }
 impl Api for ResourceApi {

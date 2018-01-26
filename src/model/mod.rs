@@ -1,10 +1,12 @@
 pub mod post;
 pub mod metadata;
 pub mod comment;
+pub mod resource;
 
 pub use self::post::PostSource;
 pub use self::metadata::MetadataSource;
 pub use self::comment::CommentSource;
+pub use self::resource::ResourceSource;
 
 use std::io::{BufReader, BufWriter};
 use std::fs::{create_dir_all, remove_file, read_dir, remove_dir};

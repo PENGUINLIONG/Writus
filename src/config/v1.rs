@@ -35,6 +35,7 @@ impl From<Extra> for Namespace {
         let post_cache = Arc::new(Cache::new(10, PostSource::new(&extra.published_dir)));
         let metadata_cache = Arc::new(Cache::new(10, MetadataSource::new(&extra.published_dir)));
         let comment_cache = Arc::new(Cache::new(10, CommentSource::new(&extra.published_dir)));
+        let resource_cache = Arc::new(Cache::new(10, ResourceSource::new(&extra.published_dir)));
 
         let mut post_api = PostApi::new();
         post_api.set_auth(extra.auth.clone());
@@ -52,6 +53,7 @@ impl From<Extra> for Namespace {
 
         let mut resource_api = ResourceApi::new();
         resource_api.set_auth(extra.auth.clone());
+        resource_api.set_cache(resource_cache.clone());
         resource_api.set_published_dir(&extra.published_dir);
         resource_api.set_allowed_exts(extra.allowed_exts.clone());
 
