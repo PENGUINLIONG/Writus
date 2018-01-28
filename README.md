@@ -15,4 +15,4 @@ Although all the APIs *work*, as described in the [docs](https://github.com/PENG
 
 ## Customize
 
-Writus has no finished views. The views need to be customized with page templates, otherwise you can see nothing via your browser. Please refer to [this wiki page](https://github.com/PENGUINLIONG/Writus/wiki/Templates) for more information. A example front-end project will be released soon.
+Writus has no finished views. The views need to be customized with page templates, otherwise you can see nothing via your browser. Please refer to [this wiki page](https://github.com/PENGUINLIONG/Writus/wiki/Templates) for more information. A example front-end project can be found [here](https://github.com/PENGUINLIONG/Writus-Example).
