@@ -55,7 +55,13 @@ impl FileAccessor {
             .read(true)
             .open(&path)
             .map(|file| BufReader::new(file))
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))
+            .map_err(|err| {
+                warn!("Unable to read from file: {}", id);
+                if let Some(file) = self.fixed_file_name {
+                    warn!("Fixed file name is: {}", file);
+                }
+                Error::internal(ERR_ACCESS).with_cause(err)
+            })
     }
     pub fn write(&self, id: &str) -> Result<BufWriter<File>> {
         let path = self.make_path(id);
@@ -63,6 +69,8 @@ impl FileAccessor {
             if !parent.exists() {
                 create_dir_all(&parent)
                     .map_err(|err| {
+                        warn!("Unable to build parent directories: {}",
+                            parent.to_string_lossy());
                         Error::internal(ERR_BUILD_DIR).with_cause(err)
                     })?
             }
@@ -73,7 +81,13 @@ impl FileAccessor {
             .write(true)
             .open(&path)
             .map(|file| BufWriter::new(file))
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))
+            .map_err(|err| {
+                warn!("Unable to write to file: {}", id);
+                if let Some(file) = self.fixed_file_name {
+                    warn!("Fixed file name is: {}", file);
+                }
+                Error::internal(ERR_ACCESS).with_cause(err)
+            })
     }
     pub fn remove(&self, id: &str) -> Result<()> {
         let path_buf = self.make_path(id);
@@ -84,7 +98,10 @@ impl FileAccessor {
             return Ok(())
         }
         remove_file(path)
-            .map_err(|err| Error::internal(ERR_ACCESS).with_cause(err))?;
+            .map_err(|err| {
+                warn!("Unable to write to file: {}", id);
+                Error::internal(ERR_ACCESS).with_cause(err)
+            })?;
         loop {
             path = match path.parent() {
                 Some(parent) => parent,
