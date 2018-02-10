@@ -27,7 +27,8 @@ impl CacheSource for MockSource {
     }
     fn remove(&self, id: &str) -> Result<()> {
         println!("Removing {} from source.", id);
-        self.0.lock().unwrap().remove(id).map(|_| println!("Something was removed."));
+        self.0.lock().unwrap().remove(id)
+            .map(|_| println!("Something was removed."));
         Ok(())
     }
 }

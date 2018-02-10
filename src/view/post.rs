@@ -62,7 +62,9 @@ impl PostView {
         let metadata_guard = metadata_cache.read().unwrap();
         let metadata: &JsonValue = &metadata_guard;
         let res = Response::new()
-            .with_header(ContentType("text/html; charset=UTF-8".parse().unwrap()))
+            .with_header(ContentType(
+                "text/html; charset=UTF-8".parse().unwrap()
+            ))
             .with_body(self.template.render(&metadata, &[
                 ("link", &id),
                 ("title", &title),

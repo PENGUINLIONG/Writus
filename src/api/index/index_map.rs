@@ -76,9 +76,11 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
                 str_ref.cmp(path)
             }) {
                 self.index.remove(pos);
-                warn!("`{}` is updated with a new key which cannot be parsed into `DateTime`. So it's removed from the index.", path)
+                warn!("`{}` is updated with a new key which cannot be parsed \
+                    into `DateTime`. So it's removed from the index.", path)
             } else {
-                warn!("`{}` has a key which cannot be parsed into `DateTime`. So it's not indexed.", path);
+                warn!("`{}` has a key which cannot be parsed into `DateTime`. \
+                    So it's not indexed.", path);
             }
             return
         };
@@ -114,7 +116,8 @@ impl<T: IndexKeyType> IndexCollection for DefaultIndexCollection<T> {
             .collect::<Vec<_>>()
     }
     fn remove(&mut self, path: &str) {
-        if let Some(pos) = self.index.iter().position(|item| (&*item.path).eq(path)) {
+        if let Some(pos) = self.index.iter()
+            .position(|item| (&*item.path).eq(path)) {
             self.index.remove(pos);
         }
     }
@@ -131,7 +134,9 @@ impl DumbIndexCollection {
 }
 impl IndexCollection for DumbIndexCollection {
     fn insert(&mut self, _path: &str, _key: &JsonValue) {}
-    fn get_range(&self, _skip: usize, _take: usize) -> Vec<String> { Vec::new() }
+    fn get_range(&self, _skip: usize, _take: usize) -> Vec<String> {
+        Vec::new()
+    }
     fn remove(&mut self, _path: &str) {}
     fn len(&self) -> usize { 0 }
 }

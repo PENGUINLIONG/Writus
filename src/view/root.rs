@@ -125,7 +125,9 @@ impl RootView {
             (String::new(), String::new())
         };
         let res = Response::new()
-            .with_header(ContentType("text/html; charset=UTF-8".parse().unwrap()))
+            .with_header(ContentType(
+                "text/html; charset=UTF-8".parse().unwrap())
+            )
             .with_body(self.index_template.render(&JsonValue::Null, &[
                 ("digests", &digests),
                 ("current", &current),

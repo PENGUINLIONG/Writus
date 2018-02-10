@@ -9,7 +9,8 @@ use self::index_map::{DateTime, DumbIndexCollection,
     DefaultIndexCollection};
 pub use self::index_map::IndexCollection;
 
-fn mk_idx(key: &str, mut col: Box<IndexCollection>, dir: Option<&str>) -> Index {
+fn mk_idx(key: &str, mut col: Box<IndexCollection>, dir: Option<&str>)
+    -> Index {
     Index {
         index: {
             if let Some(dir) = dir {
@@ -27,8 +28,8 @@ pub struct Index {
 }
 impl Index {
     /// Make a new `Index` with given index collection and index key.
-    pub fn with_index_collection<T>(key: &str, col: T, dir: Option<&str>) -> Index
-        where T: 'static + IndexCollection {
+    pub fn with_index_collection<T>(key: &str, col: T, dir: Option<&str>)
+        -> Index where T: 'static + IndexCollection {
         mk_idx(key, Box::new(col), dir)
     }
     /// Make a new `Index` with given index key and corresponding default index
@@ -50,10 +51,17 @@ impl Index {
             true
         };
         let col: Box<IndexCollection> = match ty {
-            "string" => Box::new(DefaultIndexCollection::<String>::new(ascending)),
-            "integer" => Box::new(DefaultIndexCollection::<i64>::new(ascending)),
-            "datetime" => Box::new(DefaultIndexCollection::<DateTime>::new(ascending)),
-            _ => panic!("Index key type should be one of `datetime`, `string`, or `integer`."),
+            "string" => Box::new(
+                DefaultIndexCollection::<String>::new(ascending)
+            ),
+            "integer" => Box::new(
+                DefaultIndexCollection::<i64>::new(ascending)
+            ),
+            "datetime" => Box::new(
+                DefaultIndexCollection::<DateTime>::new(ascending)
+            ),
+            _ => panic!("Index key type should be one of `datetime`, `string`, \
+                or `integer`."),
         };
         mk_idx(key, col, dir)
     }

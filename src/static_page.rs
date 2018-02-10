@@ -74,7 +74,9 @@ impl Api for StaticPage {
                     return Err(Error::not_found("Unexpected trailing error."))
                 }
                 let res = Response::new()
-                    .with_header(ContentType("text/html; charset=UTF-8".parse().unwrap()))
+                    .with_header(ContentType(
+                        "text/html; charset=UTF-8".parse().unwrap()
+                    ))
                     .with_body(self.html.as_bytes());
                 Ok(res)
             },

@@ -90,7 +90,9 @@ impl PostApi {
         let id = req.path_segs().join("/");
         self.cache.get(&id)
             .or(self.cache.create(&id))
-            .and_then(|cache| Ok(*cache.write().unwrap() = req.to_str()?.to_owned()))
+            .and_then(|cache| {
+                Ok(*cache.write().unwrap() = req.to_str()?.to_owned())
+            })
             .map(|_| Response::new())
     }
     /// `/v1/posts{/path..}`

@@ -171,7 +171,8 @@ fn test_index_order() {
         .with_json(&gen_999())
         .unwrap();
     let _ = test_ok(&api, req);
-    assert_eq!(index.read().unwrap().get_range(0, 3), vec!["bar", "baz", "foo"]);
+    assert_eq!(index.read().unwrap().get_range(0, 3),
+        vec!["bar", "baz", "foo"]);
 }
 #[test]
 fn test_index_removal() {

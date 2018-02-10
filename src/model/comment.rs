@@ -4,7 +4,8 @@ use writium_cache::CacheSource;
 use super::FileAccessor;
 
 const ERR_IO: &str = "Resource accessed but error occured during IO.";
-const ERR_BROKEN_JSON: &str = "Local JSON file is broken. Try replacing the invalid data before other operations.";
+const ERR_BROKEN_JSON: &str = "Local JSON file is broken. Try replacing the \
+    invalid data before other operations.";
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Comment {

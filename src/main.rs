@@ -51,7 +51,8 @@ fn init_logging() {
     use env_logger::LogBuilder;
     use log::{LogLevelFilter, LogRecord};
     let format = |record: &LogRecord| {
-        format!("{} {:?} [{}] {}", chrono::Utc::now().to_rfc3339(), std::thread::current().id(), record.level(), record.args())
+        format!("{} {:?} [{}] {}", chrono::Utc::now().to_rfc3339(),
+            std::thread::current().id(), record.level(), record.args())
     };
     let mut builder = LogBuilder::new();
     builder.format(format).filter(None, LogLevelFilter::Info);
@@ -130,7 +131,8 @@ fn main() {
         let server = tokio_proto::TcpServer::new(tls, addr);
         server.serve(::hyper::server::const_service(service));
     } else {
-        let server = Http::new().bind(&addr, ::hyper::server::const_service(service)).unwrap();
+        let server = Http::new()
+            .bind(&addr, ::hyper::server::const_service(service)).unwrap();
         server.run().unwrap();
     }
 }

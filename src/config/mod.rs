@@ -49,7 +49,8 @@ impl WritusConfig{
             Err(_) => panic!("Unable to parse args."),
         };
         if matches.opt_present("h") {
-            error!("{}", options.usage(&"Usage: writium CONFIG_FILE [options]"));
+            error!("{}",
+                options.usage(&"Usage: writium CONFIG_FILE [options]"));
             exit(0);
         }
         let path = if matches.free.is_empty() {
@@ -75,12 +76,16 @@ impl WritusConfig{
             .expect("Unable to set current directory to config file's parent.");
         match ::toml::from_str::<WritusConfig>(&config) {
             Ok(toml) => toml.insert_default(),
-            Err(err) => panic!("Unable to parse Writium config file. {:?}", err),
+            Err(err) => panic!("Unable to parse Writus config file: {:?}", err),
         }
     }
     fn insert_default(mut self) -> WritusConfig {
-        if self.host_addr.is_none() { self.host_addr = Some("127.0.0.1".to_string()) }
-        if self.port.is_none() { self.port = Some(8080) }
+        if self.host_addr.is_none() {
+            self.host_addr = Some("127.0.0.1".to_string())
+        }
+        if self.port.is_none() {
+            self.port = Some(8080)
+        }
 
         if self.extra.is_none() {
             self.extra =

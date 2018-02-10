@@ -12,9 +12,13 @@ mod tests;
 
 const DEFAULT_ENTRIES_PER_REQUEST: usize = 5;
 
-const ERR_PRIVILEGE: &'static str = "Requested operation need a matching privilege token to execute.";
-const ERR_NOT_FOUND: &'static str = "Cannot find a comment matching the requested index. Maybe it's been deleted already.";
-const ERR_RANGE: &'static str = "The requested range is not valid. A valid range should be one of `from={from}`, `to={to}`, or `from={from}&to={to}` where `{from}` < `{to}`.";
+const ERR_PRIVILEGE: &'static str = "Requested operation need a matching \
+    privilege token to execute.";
+const ERR_NOT_FOUND: &'static str = "Cannot find a comment matching the \
+    requested index. Maybe it's been deleted already.";
+const ERR_RANGE: &'static str = "The requested range is not valid. A valid \
+    range should be one of `from={from}`, `to={to}`, or `from={from}&to={to}` \
+    where `{from}` < `{to}`.";
 
 pub struct CommentApi {
     cache: Arc<Cache<Comments>>,
@@ -166,7 +170,9 @@ impl CommentApi {
         let comment = req.to_json::<Comment>()?;
         let cache = self.cache.create(&id)?;
         // There are comments already loaded, start indexing from the last one.
-        let index = if let Some((index, _)) = cache.read().unwrap().iter().last() {
+        let index = if let Some((index, _)) = cache.read().unwrap()
+            .iter()
+            .last() {
             Some(index.to_owned())
         } else {
             None

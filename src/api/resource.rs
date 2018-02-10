@@ -6,9 +6,13 @@ use writium::hyper::mime::Mime;
 use writium_auth::{Authority, DumbAuthority};
 use writium_cache::{Cache, DumbCacheSource};
 
-const ERR_MISSING_CONTENT_TYPE: &'static str = "Content type should be denoted for verification use.";
-const ERR_MIME_NOT_FOUND: &'static str = "No corresponding MIME matches the inquired file type (extension). Maybe the file type is intentionally prevented from being transferred.";
-const ERR_MIME_EXT_MISMATCH: &'static str = "Path extension doesn't accord with content type denoted.";
+const ERR_MISSING_CONTENT_TYPE: &'static str = "Content type should be denoted \
+    for verification use.";
+const ERR_MIME_NOT_FOUND: &'static str = "No corresponding MIME matches the \
+    inquired file type (extension). Maybe the file type is intentionally \
+    prevented from being transferred.";
+const ERR_MIME_EXT_MISMATCH: &'static str = "Path extension doesn't accord \
+    with content type denoted.";
 
 pub struct ResourceApi {
     auth: Arc<Authority<Privilege=()>>,
@@ -43,7 +47,8 @@ impl ResourceApi {
         let id = req.path_segs().join("/");
         let ext = id.rsplitn(2, '.').next().unwrap_or_default();
         let mime = self.allowed_exts.get(ext)
-            .ok_or(Error::new(StatusCode::UnsupportedMediaType, ERR_MIME_NOT_FOUND))?;
+            .ok_or(Error::new(StatusCode::UnsupportedMediaType,
+                ERR_MIME_NOT_FOUND))?;
 
         let cache = self.cache.get(&id)?;
         let guard = cache.read().unwrap();
@@ -60,7 +65,8 @@ impl ResourceApi {
         let id = req.path_segs().join("/");
         let ext = id.rsplitn(2, '.').next().unwrap_or_default();
         let mm = self.allowed_exts.get(ext)
-            .ok_or(Error::new(StatusCode::UnsupportedMediaType, ERR_MIME_NOT_FOUND))?;
+            .ok_or(Error::new(StatusCode::UnsupportedMediaType,
+                ERR_MIME_NOT_FOUND))?;
         let mime = req.header::<ContentType>()
             .ok_or(Error::bad_request(ERR_MISSING_CONTENT_TYPE))?;
         if mime.0 != *mm {
@@ -69,7 +75,9 @@ impl ResourceApi {
 
         self.cache.get(&id)
             .or(self.cache.create(&id))
-            .and_then(|cache| Ok(*cache.write().unwrap() = req.body().to_owned()))
+            .and_then(|cache| {
+                Ok(*cache.write().unwrap() = req.body().to_owned())
+            })
             .map(|_| Response::new())
     }
 

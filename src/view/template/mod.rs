@@ -6,7 +6,8 @@ use serde_json::Value as JsonValue;
 mod section;
 use self::section::*;
 
-fn concat_subfragments(base: &Path, mut template: String) -> Result<String, String> {
+fn concat_subfragments(base: &Path, mut template: String)
+    -> Result<String, String> {
     let mut rv = String::with_capacity(template.len());
     loop {
         if let Some(beg) = template.find("<?") {
@@ -85,7 +86,7 @@ pub struct Template {
 impl Template {
     pub fn from_file(base: &str, path: &str) -> Option<Template> {
         info!("Loading template from file: {}", [base, path].join("/"));
-        let concated = match load_fragement(&PathBuf::from(base), &PathBuf::from(path)) {
+        let concated = match load_fragement(Path::new(base), Path::new(path)) {
             Ok(concated) => concated,
             Err(err) => {
                 error!("Cannot compile template: {}", err);

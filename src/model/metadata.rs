@@ -4,7 +4,8 @@ use serde_json::Value as JsonValue;
 use super::FileAccessor;
 
 const ERR_IO: &str = "Resource accessed but error occured during IO.";
-const ERR_BROKEN_JSON: &str = "Local JSON file is broken. Try replacing the invalid data before other operations.";
+const ERR_BROKEN_JSON: &str = "Local JSON file is broken. Try replacing the\
+    invalid data before other operations.";
 
 pub struct MetadataSource {
     accessor: FileAccessor,
@@ -28,13 +29,16 @@ impl CacheSource for MetadataSource {
             Ok(json) => if json.is_object() {
                 Ok(json)
             } else if create{
-                warn!("JSON in '{}' is valid but is not an object. `create` flag is on, so a new value will replace the invalid data.", id);
+                warn!("JSON in '{}' is valid but is not an object. `create` \
+                    flag is on, so a new value will replace the invalid data.",
+                    id);
                 Ok(json!({}))
             } else {
                 Err(Error::internal(ERR_BROKEN_JSON))
             },
             Err(err) => if create {
-                warn!("JSON in '{}' is broken and `create` flag is on. A new value will replace the invalid data.", id);
+                warn!("JSON in '{}' is broken and `create` flag is on. A new \
+                    value will replace the invalid data.", id);
                 Ok(json!({}))
             } else {
                 Err(Error::internal(ERR_BROKEN_JSON).with_cause(err))

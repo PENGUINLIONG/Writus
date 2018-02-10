@@ -36,7 +36,9 @@ impl MockSource {
     pub fn new_privilege() -> MockSource {
         let mut map = HashMap::new();
         let mut article = make_article(&[("PENGUINLIONG", "Wow!")]);
-        article.get_mut(&0).unwrap().metadata.insert("privilege".to_owned(), "POWER!".to_owned());
+        article.get_mut(&0).unwrap()
+            .metadata
+            .insert("privilege".to_owned(), "POWER!".to_owned());
         map.insert("foo".to_owned(), article);
 
         MockSource(Mutex::new(map))
