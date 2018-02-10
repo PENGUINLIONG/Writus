@@ -134,5 +134,5 @@ fn clean_id<'a>(id: &'a str) -> &'a str {
     let pos_non_slash = id.bytes()
         .position(|x| x != b'/')
         .unwrap_or(0);
-    &id[..pos_non_slash]
+    &id[pos_non_slash..]
 }
