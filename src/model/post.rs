@@ -3,6 +3,8 @@ use writium::prelude::*;
 use super::FileAccessor;
 
 const ERR_IO: &str = "Resource accessed but error occured during IO.";
+const ERR_PARENT: &str = "Parent of requested post cannot be created. Maybe \
+    there is a file occupying a segment of name in the path.";
 
 pub struct PostSource {
     accessor: FileAccessor,
@@ -28,6 +30,15 @@ impl CacheSource for PostSource {
                 // can be published.
             },
             Err(err) => if create {
+                // Parent might not exist.
+                if let Some(parent) = self.accessor.make_path(id).parent() {
+                    // Create all directory so that all subsequent uploading of
+                    // resources can be realized.
+                    ::std::fs::create_dir_all(parent)
+                        .map_err(|err| {
+                            Error::internal(ERR_PARENT).with_cause(err)
+                        })?;
+                }
                 Ok(String::new())
             } else {
                 Err(err)

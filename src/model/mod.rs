@@ -38,7 +38,7 @@ impl FileAccessor {
     }
 
     #[inline]
-    fn make_path(&self, id: &str) -> PathBuf {
+    pub fn make_path(&self, id: &str) -> PathBuf {
         let mut path = self.dir.clone();
         // Clean ID, any leading '/' will lead operations to seek for files from
         // the root.
