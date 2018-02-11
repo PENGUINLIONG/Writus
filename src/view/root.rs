@@ -70,10 +70,11 @@ impl RootView {
             ::pulldown_cmark::html::push_html(&mut buf, parser);
             buf
         }
-        let path = format!("posts/{}", id);
+        let path = format!("/posts/{}", id);
         let (title, content) = get_digest(&post);
         self.digest_template.render(meta, &[
             ("link", &path),
+            ("id", &id),
             ("title", &title),
             ("content", &md_to_html(&content)),
         ])

@@ -61,12 +61,14 @@ impl PostView {
         let metadata_cache = self.metadata_cache.get(&id)?;
         let metadata_guard = metadata_cache.read().unwrap();
         let metadata: &JsonValue = &metadata_guard;
+        let path = format!("/posts/{}", id);
         let res = Response::new()
             .with_header(ContentType(
                 "text/html; charset=UTF-8".parse().unwrap()
             ))
             .with_body(self.template.render(&metadata, &[
-                ("link", &id),
+                ("link", &path),
+                ("id", &id),
                 ("title", &title),
                 ("content", &md_to_html(&content)),
             ]));
