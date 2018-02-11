@@ -67,24 +67,34 @@ impl MetadataApi {
         let id = req.path_segs().join("/");
         let param = req.to_param::<Param>()?;
         if let Some(keys) = param.keys {
+            let cache = self.cache.get(&id)?;
             // If the index key is removed, remove it from index.
             if keys.contains(self.index.index_key()) {
                 self.index.write().unwrap().remove(&id);
-            }
-            self.cache.get(&id)
-                .map(|cache| {
-                    let mut guard = cache.write().unwrap();
-                    let obj_ref = guard.as_object_mut().unwrap();
-                    for key in keys {
-                        obj_ref.remove(&key);
+            // If `noIndex` is removed and the key is not removed, add it to
+            // index.
+            } else if keys.iter().any(|x| x == "noIndex") {
+                let guard = cache.read().unwrap();
+                // The original value is true, so it's indexing is suppressed
+                // before,
+                if let Some(&JsonValue::Bool(true)) = guard.get("noIndex") {
+                    // There is a index key in metadata.
+                    if let Some(key) = guard.get(self.index.index_key()) {
+                        self.index.write().unwrap().insert(&id, key);
                     }
-                })
+                }
+            }
+            let mut guard = cache.write().unwrap();
+            let obj_ref = guard.as_object_mut().unwrap();
+            for key in keys {
+                obj_ref.remove(&key);
+            }
         } else {
             // All metadata are removed, remove it from index.
             self.index.write().unwrap().remove(&id);
-            self.cache.remove(&id)
+            self.cache.remove(&id)?
         }
-        .map(|_| Response::new())
+        Ok(Response::new())
     }
 
     /// GET `metadata/<path..>?key=<key>`;
