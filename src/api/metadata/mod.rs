@@ -35,8 +35,7 @@ impl MetadataApi {
         self.index = index;
     }
 
-    fn patch_cache<F>(&self, req: &mut Request, id: &str, f: F) -> ApiResult
-        where F: 'static + FnOnce(JsonValue) {
+    fn parse_json(&self, req: &mut Request) -> Result<JsonValue> {
         use writium::hyper::header::ContentType;
 
         self.auth.authorize((), &req)?;
@@ -50,18 +49,10 @@ impl MetadataApi {
         let json = ::serde_json::from_slice::<JsonValue>(req.body())
             .map_err(|err| Error::bad_request(ERR_JSON).with_cause(err))?;
         if json.is_object() {
-            // If index key value is changed, update the index.
-            if let Some(ref key) = json.get(self.index.index_key()) {
-                self.index.write().unwrap().insert(&id, key);
-            }
             Ok(json)
         } else {
             Err(Error::bad_request(ERR_JSON))
         }
-        .map(|json| {
-            f(json);
-            Response::new()
-        })
     }
 
     /// DELETE `metadata/<path..>?keys=<key>`
@@ -128,22 +119,43 @@ impl MetadataApi {
     fn put(&self, req: &mut Request) -> ApiResult {
         let id = req.path_segs().join("/");
         let cache = self.cache.create(&id)?;
-        self.patch_cache(req, &id, move |json| {
-            let mut guard = cache.write().unwrap();
-            *guard = json;
-        })
+        let json = self.parse_json(req)?;
+        let mut guard = cache.write().unwrap();
+        // If `noIndex` flag is set `true`, remove the article from index and
+        // stop from index updating. If it's set to `false` and there is a valid
+        // index key stored in metadata, the article should be indexed.
+        if let Some(&JsonValue::Bool(true)) = json.get("noIndex") {
+            self.index.write().unwrap().remove(&id);
+        // Update the index.
+        } else if let Some(ref key) = json.get(self.index.index_key()) {
+            self.index.write().unwrap().insert(&id, key);
+        }
+        // Replace metadata with the new one.
+        *guard = json;
+        Ok(Response::new())
     }
     /// PATCH `metadata/<path..>`
     fn patch(&self, req: &mut Request) -> ApiResult {
         let id = req.path_segs().join("/");
         let cache = self.cache.get(&id)?;
-        self.patch_cache(req, &id, move |json| {
-            let mut guard = cache.write().unwrap();
-            let obj = guard.as_object_mut().unwrap();
-            for item in json.as_object().unwrap() {
-                obj.insert(item.0.to_string(), item.1.clone());
-            }
-        })
+        let json = self.parse_json(req)?;
+        let mut guard = cache.write().unwrap();
+        let obj = guard.as_object_mut().unwrap();
+        for item in json.as_object().unwrap() {
+            obj.insert(item.0.to_string(), item.1.clone());
+        }
+        
+        if let Some(&JsonValue::Bool(true)) = json.get("noIndex") {
+            self.index.write().unwrap().remove(&id);
+        // If index key has been changed, update the index.
+        } else if let Some(ref key) = json.get(self.index.index_key()) {
+            self.index.write().unwrap().insert(&id, key);
+        // No index key update, check if there is already a index key in the
+        // unchanged portion of metadata.
+        } else if let Some(ref key) = obj.get(self.index.index_key()) {
+            self.index.write().unwrap().insert(&id, key);
+        }
+        Ok(Response::new())
     }
 }
 impl Api for MetadataApi {
