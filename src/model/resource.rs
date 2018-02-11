@@ -18,7 +18,14 @@ impl CacheSource for ResourceSource {
     type Value = Vec<u8>;
     fn load(&self, id: &str, create: bool) -> Result<Vec<u8>> {
         use std::io::Read;
-        let mut reader = self.accessor.read(id)?;
+        let mut reader = match self.accessor.read(id) {
+            Ok(rd) => rd,
+            Err(err) => return if create {
+                Ok(Vec::new())
+            } else {
+                Err(err)
+            }
+        };
         let mut buf = Vec::new();
         match reader.read_to_end(&mut buf) {
             Ok(_) => Ok(buf),

@@ -69,7 +69,7 @@ impl ResourceApi {
                 ERR_MIME_NOT_FOUND))?;
         let mime = req.header::<ContentType>()
             .ok_or(Error::bad_request(ERR_MISSING_CONTENT_TYPE))?;
-        if mime.0 != *mm {
+        if mime.0.type_() != mm.type_() || mime.0.subtype() != mm.subtype() {
             return Err(Error::bad_request(ERR_MIME_EXT_MISMATCH))
         }
 
