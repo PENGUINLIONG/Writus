@@ -103,7 +103,7 @@ fn make_index(dir: &str, key: &str, index: &mut IndexCollection) {
                     .to_string();
                 index.insert(&path, &val);
             } else {
-                warn!("Article is not indexed: index key is absent.");
+                warn!("Article is not indexed.");
             }
         } else {
             error!("Unexpected error accessing parent of: {}",
@@ -129,6 +129,10 @@ fn get_index_val_for(parent: &Path, key: &str) -> Option<JsonValue> {
         .map_err(|err| warn!("Unable to serialize content of '{}': {}",
             parent.to_string_lossy(), err))
         .ok()?;
+    // If field `noIndex` presents and is set true, ignore the article.
+    if let Some(&JsonValue::Bool(true)) = json.get("noIndex") {
+        return None
+    }
     json.get(key)
         .map(|x| x.to_owned())
 }
