@@ -21,7 +21,14 @@ impl CacheSource for MetadataSource {
     type Value = JsonValue;
     fn load(&self, id:&str, create: bool) -> Result<Self::Value> {
         use std::io::Read;
-        let mut reader = self.accessor.read(id)?;
+        let mut reader = match self.accessor.read(id) {
+            Ok(rd) => rd,
+            Err(err) => return if create {
+                Ok(json!({}))
+            } else {
+                Err(err)
+            }
+        };
         let mut json_vec = Vec::new();
         reader.read_to_end(&mut json_vec)
             .map_err(|err| Error::internal(ERR_IO).with_cause(err))?;
